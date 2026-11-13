@@ -1,0 +1,168 @@
+const { app, BrowserWindow, dialog, ipcMain, protocol, net, Menu, shell } = require('electron');
+const path = require('node:path');
+const fs = require('node:fs/promises');
+const { pathToFileURL } = require('node:url');
+
+const DIST = path.join(__dirname, '..', 'dist');
+const isMac = process.platform === 'darwin';
+
+let win = null;
+let rendererReady = false;
+let dirty = false;
+const pending = []; // files to open once the window is ready
+const allowed = new Set(); // paths the user picked; the only ones the page may read or write
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, codeCache: true } },
+]);
+
+const pdfArgs = (argv) => argv.filter((a) => /\.pdf$/i.test(a) && !a.startsWith('-'));
+
+async function readEntry(p) {
+  const bytes = new Uint8Array(await fs.readFile(p));
+  allowed.add(p);
+  app.addRecentDocument(p);
+  return { name: path.basename(p), bytes, ref: p };
+}
+
+async function sendFile(p) {
+  if (!win || !rendererReady) return void pending.push(p);
+  try {
+    win.webContents.send('open-file', await readEntry(p));
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  } catch (e) {
+    dialog.showErrorBox('Could not open file', `${p}\n\n${e.message}`);
+  }
+}
+
+function createWindow() {
+  win = new BrowserWindow({
+    width: 1280,
+    height: 860,
+    minWidth: 420,
+    minHeight: 480,
+    backgroundColor: '#1b2338',
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  win.loadURL('app://tala/index.html');
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:/.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  win.webContents.on('will-navigate', (e, url) => {
+    if (!url.startsWith('app://tala/')) e.preventDefault();
+  });
+  win.on('close', (e) => {
+    if (!dirty) return;
+    const choice = dialog.showMessageBoxSync(win, {
+      type: 'question',
+      buttons: ['Keep working', 'Close anyway'],
+      defaultId: 0,
+      cancelId: 0,
+      message: 'Some documents have unsaved changes.',
+      detail: 'If you close now, the changes are kept as a recovery copy and offered again the next time you start the app.',
+    });
+    if (choice === 0) e.preventDefault();
+  });
+  win.on('closed', () => {
+    win = null;
+    rendererReady = false;
+  });
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', (_e, argv) => {
+    for (const p of pdfArgs(argv.slice(1))) sendFile(path.resolve(p));
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+  // macOS delivers "Open with" and dropped-on-dock files here, possibly before the app is ready.
+  app.on('open-file', (e, p) => {
+    e.preventDefault();
+    if (app.isReady() && !win) createWindow();
+    sendFile(p);
+  });
+
+  app.whenReady().then(() => {
+    protocol.handle('app', (request) => {
+      const { pathname } = new URL(request.url);
+      const file = path.normalize(path.join(DIST, decodeURIComponent(pathname)));
+      if (file !== DIST && !file.startsWith(DIST + path.sep)) return new Response('Not found', { status: 404 });
+      return net.fetch(pathToFileURL(file).toString());
+    });
+
+    ipcMain.on('ready', () => {
+      rendererReady = true;
+      for (const p of pending.splice(0)) sendFile(p);
+    });
+    ipcMain.on('set-dirty', (_e, v) => {
+      dirty = !!v;
+      if (isMac && win) win.setDocumentEdited(dirty);
+    });
+    ipcMain.on('allow-path', (_e, p) => {
+      if (typeof p === 'string' && /\.pdf$/i.test(p)) allowed.add(p);
+    });
+    ipcMain.handle('open-dialog', async (_e, multiple) => {
+      const res = await dialog.showOpenDialog(win, {
+        properties: ['openFile', ...(multiple ? ['multiSelections'] : [])],
+        filters: [{ name: 'PDF documents', extensions: ['pdf'] }],
+      });
+      if (res.canceled) return [];
+      return Promise.all(res.filePaths.map(readEntry));
+    });
+    ipcMain.handle('read', async (_e, p) => {
+      // Reopening a recent file: only PDFs, and only by a path this app saved earlier.
+      if (typeof p !== 'string' || !/\.pdf$/i.test(p)) throw new Error('Not a PDF file.');
+      return readEntry(p);
+    });
+    ipcMain.handle('write', async (_e, p, bytes) => {
+      if (!allowed.has(p)) throw new Error('This file was not opened from the app.');
+      await fs.writeFile(p, bytes);
+      return true;
+    });
+    ipcMain.handle('save-as', async (_e, name, bytes) => {
+      const ext = path.extname(name).slice(1) || 'pdf';
+      const res = await dialog.showSaveDialog(win, {
+        defaultPath: name,
+        filters: [{ name: ext.toUpperCase() + ' file', extensions: [ext] }],
+      });
+      if (res.canceled || !res.filePath) return null;
+      await fs.writeFile(res.filePath, bytes);
+      allowed.add(res.filePath);
+      return { path: res.filePath, name: path.basename(res.filePath) };
+    });
+
+    Menu.setApplicationMenu(
+      Menu.buildFromTemplate([
+        ...(isMac ? [{ role: 'appMenu' }] : []),
+        { role: 'editMenu' },
+        {
+          label: 'View',
+          submenu: [{ role: 'togglefullscreen' }, { role: 'toggleDevTools' }],
+        },
+        { role: 'windowMenu' },
+      ]),
+    );
+
+    for (const p of pdfArgs(process.argv.slice(1))) pending.push(path.resolve(p));
+    createWindow();
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+  });
+
+  app.on('window-all-closed', () => {
+    if (!isMac) app.quit();
+  });
+}
