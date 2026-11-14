@@ -65,6 +65,10 @@ import {
   Presentation,
   FileInput,
   GripVertical,
+  CircleHelp,
+  BookOpen,
+  Keyboard,
+  Info,
 } from 'lucide';
 
 const L = {
@@ -133,6 +137,10 @@ const L = {
   Presentation,
   FileInput,
   GripVertical,
+  CircleHelp,
+  BookOpen,
+  Keyboard,
+  Info,
 };
 
 /** Tiny DOM builder: h('div.cls#id', {attrs/on*}, ...children) */

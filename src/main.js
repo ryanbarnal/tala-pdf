@@ -13,7 +13,7 @@ import * as store from './store.js';
 import { ocrPage, hasText } from './ocr.js';
 import { convertToPdf, CONVERTIBLE, UNSUPPORTED_HINT } from './convert.js';
 import * as ex from './exporters.js';
-import { APP_NAME } from './config.js';
+import { APP_NAME, APP_CREDIT, APP_VERSION, MANUAL_URL } from './config.js';
 
 const TOOLS = [
   ['select', 'MousePointer2', 'Select'],
@@ -74,10 +74,11 @@ const printRoot = h('div#print-root');
 document.getElementById('app').append(
   h(
     'header.topbar',
-    h('div.brand', h('img.brand-mark', { src: './mark.svg', alt: '', width: 30, height: 30 }), h('span.brand-name', APP_NAME)),
+    h('div.brand', h('img.brand-mark', { src: './mark.svg', alt: '', width: 22, height: 22 }), h('span.brand-name', APP_NAME)),
     tabsEl,
     h('button.iconbtn', { type: 'button', title: 'New tab', 'aria-label': 'New tab', onClick: () => setMode('home') }, icon('Plus')),
     h('span.grow'),
+    h('button.iconbtn#help-btn', { type: 'button', title: 'Help (F1)', 'aria-label': 'Help', onClick: (e) => helpMenu(e.currentTarget) }, icon('CircleHelp')),
     h('button.iconbtn#theme-btn', { type: 'button', title: 'Switch light or dark theme', 'aria-label': 'Switch theme', onClick: toggleTheme }, icon('Moon')),
   ),
   toolbar,
@@ -698,6 +699,13 @@ async function drawHome() {
             ),
           )
         : null,
+      h(
+        'footer.home-foot',
+        h('span', `Tala PDF ${APP_VERSION}`),
+        h('span', APP_CREDIT),
+        h('button.linkbtn', { type: 'button', onClick: openManual }, 'User manual'),
+        h('button.linkbtn', { type: 'button', onClick: shortcutsDialog }, 'Keyboard shortcuts'),
+      ),
     ),
   );
 }
@@ -1405,6 +1413,83 @@ function placeText(text, size = 12) {
   toast('Drag it into place');
 }
 
+/* ================= help ================= */
+
+function helpMenu(anchor) {
+  popMenu(anchor, [
+    { icon: 'BookOpen', label: 'User manual', onClick: openManual },
+    { icon: 'Keyboard', label: 'Keyboard shortcuts', onClick: shortcutsDialog },
+    '-',
+    { icon: 'Info', label: 'About Tala PDF', onClick: aboutDialog },
+  ]);
+}
+
+/** Open the manual as a document in its own tab, so it can be read, searched and saved like any PDF. */
+async function openManual() {
+  const open = app.docs.find((d) => d.isManual);
+  if (open) return activate(open);
+  try {
+    const res = await fetch(MANUAL_URL);
+    if (!res.ok) throw new Error('The manual is missing from this installation.');
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const src = await addSource(bytes, 'Tala PDF Manual.pdf', askPassword);
+    const doc = new Doc('Tala PDF Manual.pdf');
+    doc.pages = pagesFromSource(src);
+    doc.isManual = true;
+    addDoc(doc);
+  } catch (e) {
+    toast('Could not open the manual: ' + e.message, 'error');
+  }
+}
+
+const SHORTCUTS = [
+  ['Open a file', 'Ctrl+O'],
+  ['Save', 'Ctrl+S'],
+  ['Save as', 'Ctrl+Shift+S'],
+  ['Export', 'Ctrl+Shift+E'],
+  ['Print', 'Ctrl+P'],
+  ['Find in document', 'Ctrl+F'],
+  ['Undo / Redo', 'Ctrl+Z / Ctrl+Y'],
+  ['Zoom in / out', 'Ctrl+= / Ctrl+-'],
+  ['Fit page width', 'Ctrl+0'],
+  ['Delete the selected item', 'Delete'],
+  ['Back to the Select tool', 'Esc'],
+  ['Select all pages (Pages view)', 'Ctrl+A'],
+  ['Open the manual', 'F1'],
+];
+
+function shortcutsDialog() {
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+  modal(
+    'Keyboard shortcuts',
+    h(
+      'div.stack',
+      h(
+        'table.keys',
+        h('tbody', SHORTCUTS.map(([what, keys]) => h('tr', h('td', what), h('td', keys.split(' / ').map((k, i) => [i ? ' / ' : '', h('kbd', mac ? k.replace(/Ctrl/g, '⌘') : k)]))))),
+      ),
+      mac ? h('p.muted', '⌘ is the Command key.') : null,
+    ),
+  );
+}
+
+function aboutDialog() {
+  modal(
+    'About Tala PDF',
+    h(
+      'div.about',
+      h('img', { src: './icon.svg', alt: '', width: 72, height: 72 }),
+      h('div.stack.tight', h('strong.about-name', 'Tala PDF'), h('span.muted', 'Version ' + APP_VERSION), h('span', APP_CREDIT)),
+      h('p', 'Read, mark up, sign and edit PDFs. Your files stay on this device and are never uploaded.'),
+      h('p.muted', 'Tala is the Filipino word for star. Built with pdf.js, pdf-lib, Tesseract.js, mammoth, ExcelJS, docx and PptxGenJS. Licensed under the GNU GPL v3.'),
+    ),
+    [
+      { label: 'User manual', value: 'manual' },
+      { label: 'Close', value: true, primary: true },
+    ],
+  ).then((v) => v === 'manual' && openManual());
+}
+
 /* ================= theme ================= */
 
 function applyTheme(t) {
@@ -1433,6 +1518,7 @@ document.addEventListener('keydown', (e) => {
   const typing = e.target.closest?.('input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]');
   if (document.querySelector('dialog[open]')) return;
   const k = e.key.toLowerCase();
+  if (e.key === 'F1') return e.preventDefault(), openManual();
   if (mod && k === 'o') return e.preventDefault(), openPicker();
   if (!app.doc || app.mode === 'home') return;
   if (mod && k === 's') return e.preventDefault(), save(e.shiftKey);
@@ -1522,4 +1608,19 @@ void DRAW_TOOLS;
 void clonePage;
 
 setMode('home');
+window.desktop?.onMenu?.((what) => ({ manual: openManual, shortcuts: shortcutsDialog, about: aboutDialog })[what]?.());
 window.desktop?.ready?.();
+
+/* Let the opening animation finish (about 1.6 s), then fade it away. Skip the wait when motion is reduced. */
+{
+  const splash = document.getElementById('splash');
+  if (splash) {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const shown = performance.now();
+    const wait = Math.max(0, (reduced ? 300 : 1700) - shown);
+    setTimeout(() => {
+      splash.classList.add('done');
+      setTimeout(() => splash.remove(), 400);
+    }, wait);
+  }
+}

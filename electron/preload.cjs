@@ -18,4 +18,5 @@ contextBridge.exposeInMainWorld('desktop', {
   },
   onOpen: (cb) => ipcRenderer.on('open-file', (_e, entry) => cb(entry)),
   ready: () => ipcRenderer.send('ready'),
+  onMenu: (cb) => ipcRenderer.on('menu', (_e, what) => cb(what)),
 });

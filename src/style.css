@@ -150,13 +150,13 @@ p {
 }
 .brand-mark {
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 22px;
+  height: 22px;
 }
 .brand-name {
   font-family: 'Fraunces', Georgia, serif;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
   letter-spacing: 0;
 }
 .tabs {
@@ -1579,4 +1579,67 @@ dialog.modal.wide {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 12px 8px;
   }
+}
+
+/* ---------- help, about, credit ---------- */
+.home-foot {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.linkbtn {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.about {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px 16px;
+  align-items: center;
+}
+.about img {
+  border-radius: 16px;
+}
+.about p {
+  grid-column: 1 / -1;
+}
+.about-name {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 20px;
+}
+table.keys {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.keys td {
+  padding: 7px 4px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+}
+table.keys tr:first-child td {
+  border-top: 0;
+}
+table.keys td:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+kbd {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
 }

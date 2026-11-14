@@ -125,6 +125,12 @@ if (!app.requestSingleInstanceLock()) {
     sendFile(p);
   });
 
+  app.setAboutPanelOptions({
+    applicationName: 'Tala PDF',
+    applicationVersion: app.getVersion(),
+    credits: 'Created by Ryan Ocbina Barnal',
+    copyright: '© 2026 Ryan Ocbina Barnal',
+  });
   app.whenReady().then(() => {
     protocol.handle('app', (request) => {
       const { pathname } = new URL(request.url);
@@ -188,6 +194,15 @@ if (!app.requestSingleInstanceLock()) {
           submenu: [{ role: 'togglefullscreen' }, { role: 'toggleDevTools' }],
         },
         { role: 'windowMenu' },
+        {
+          role: 'help',
+          submenu: [
+            { label: 'User manual', click: () => win?.webContents.send('menu', 'manual') },
+            { label: 'Keyboard shortcuts', click: () => win?.webContents.send('menu', 'shortcuts') },
+            { type: 'separator' },
+            { label: 'About Tala PDF', click: () => win?.webContents.send('menu', 'about') },
+          ],
+        },
       ]),
     );
 

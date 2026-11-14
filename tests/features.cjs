@@ -30,7 +30,13 @@ const check = (name, ok, extra = '') => {
     page.on('pageerror', (e) => (console.log('  [pageerror]', e.message), errors.push(e.message)));
     page.on('console', (m) => m.type() === 'error' && (console.log('  [error]', m.text().slice(0, 300)), errors.push(m.text())));
     await page.goto(`http://localhost:${PORT}/`);
+    check('opening animation shows on start', await page.locator('#splash .sp-star').count() === 1);
     await page.waitForSelector('.home-action');
+    await page.waitForSelector('#splash', { state: 'detached', timeout: 5000 });
+    check('opening animation clears itself', true);
+    check('home screen credits the author', /Created by Ryan Ocbina Barnal/.test(await page.textContent('.home-foot')));
+    const mark = await page.locator('.brand-mark').boundingBox();
+    check('title-bar logo is smaller', mark.width <= 22, mark.width + ' px');
 
     const open = async (file, via = 'open') => {
       const sel = via === 'convert' ? '.home-action:has-text("Convert to PDF")' : (await page.locator('#home').isVisible()) ? '.home-action:has-text("Open")' : '.toolbar button[title^="Open"]';
@@ -142,7 +148,26 @@ const check = (name, ok, extra = '') => {
     check('recent files show page thumbnails', (await page.locator('.recent-thumb img').count()) >= 1);
     await page.screenshot({ path: path.join(OUT, '33-home.png') });
 
-    // 6. Phone filmstrip.
+    // 6. Help: manual, shortcuts, About.
+    await page.click('#help-btn');
+    await page.click('.menu button:has-text("User manual")');
+    await page.waitForFunction(() => window.__app.doc?.isManual && document.querySelector('.page canvas'), null, { timeout: 30000 });
+    const manual = await page.evaluate(() => ({ name: window.__app.doc.name, pages: window.__app.doc.pages.length }));
+    check('Help opens the manual in a tab', manual.pages >= 15, JSON.stringify(manual));
+    await page.keyboard.press('F1');
+    check('F1 reuses the open manual tab', (await page.evaluate(() => window.__app.docs.filter((d) => d.isManual).length)) === 1);
+    await page.click('#help-btn');
+    await page.click('.menu button:has-text("About Tala PDF")');
+    const about = await page.textContent('dialog .about');
+    check('About credits the author', /Created by Ryan Ocbina Barnal/.test(about) && /Version \d/.test(about), about.slice(0, 80));
+    await page.screenshot({ path: path.join(OUT, '35-about.png') });
+    await page.keyboard.press('Escape');
+    await page.click('#help-btn');
+    await page.click('.menu button:has-text("Keyboard shortcuts")');
+    check('keyboard shortcuts list', (await page.locator('dialog table.keys tr').count()) >= 10);
+    await page.keyboard.press('Escape');
+
+    // 7. Phone filmstrip.
     const phone = await browser.newContext({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
     await phone.addInitScript(() => delete window.showOpenFilePicker);
     const mp = await phone.newPage();

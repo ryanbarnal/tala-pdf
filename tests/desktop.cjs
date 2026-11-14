@@ -78,6 +78,10 @@ const check = (name, ok, extra = '') => {
       });
       check(`desktop converts ${file} with real text`, !r.ocr && re.test(r.text), `${r.name}: ${r.pages} pages`);
     }
+    await win.evaluate(() => document.querySelector('#help-btn').click());
+    await win.click('.menu button:has-text("User manual")');
+    await win.waitForFunction(() => window.__app.doc?.isManual && document.querySelector('.page canvas'), null, { timeout: 30000 });
+    check('manual opens in the desktop app', (await win.evaluate(() => window.__app.doc.pages.length)) >= 15);
     await win.screenshot({ path: path.join(OUT, '20-desktop.png') });
     await win.evaluate(() => window.desktop.setDirty(false));
   } finally {

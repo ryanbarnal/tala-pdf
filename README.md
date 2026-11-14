@@ -1,9 +1,15 @@
-<p><img src="branding/tala-pdf-logo.png" alt="Tala PDF" width="380"></p>
+<p><img src="branding/tala-pdf-logo.png" alt="Tala PDF" width="300"></p>
 
 # Tala PDF
 
+Created by **Ryan Ocbina Barnal**.
+
 A PDF reader and editor that runs on Windows, macOS, and in any phone or desktop browser.
 Files stay on your device. Nothing is uploaded.
+
+## User manual
+
+The illustrated manual is [`public/manual/Tala-PDF-Manual.pdf`](public/manual/Tala-PDF-Manual.pdf). In the app, open it from **Help › User manual** or press **F1**. To rebuild it after changing the app, run `npm run build` and then `npm run manual`.
 
 ## What it does
 

@@ -12,13 +12,15 @@
     "desktop": "npm run build:desktop && electron .",
     "dist": "npm run build:desktop && electron-builder --publish never",
     "test": "node tests/make-fixture.mjs && node tests/make-locked.mjs && node tests/make-office.mjs && node tests/smoke.cjs && node tests/features.cjs",
-    "test:desktop": "node tests/make-fixture.mjs && node tests/desktop.cjs"
+    "test:desktop": "node tests/make-fixture.mjs && node tests/desktop.cjs",
+    "manual": "node scripts/make-manual.cjs"
   },
-  "author": "Tala PDF",
+  "author": "Ryan Ocbina Barnal",
   "license": "GPL-3.0-only",
   "devDependencies": {
     "@cantoo/pdf-lib": "^2.11.1",
     "@fontsource/fraunces": "^5.3.0",
+    "@fontsource/source-sans-3": "^5.3.1",
     "@tesseract.js-data/eng": "^1.0.0",
     "docx": "^9.15.4",
     "electron": "^45.3.2",
@@ -93,7 +95,8 @@
         "AppImage"
       ],
       "category": "Office"
-    }
+    },
+    "copyright": "© 2026 Ryan Ocbina Barnal"
   },
   "repository": {
     "type": "git",
