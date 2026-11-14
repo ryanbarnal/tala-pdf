@@ -1,4 +1,4 @@
-<p><img src="branding/tala-pdf-logo.png" alt="Tala PDF" width="360"></p>
+<p><img src="branding/tala-pdf-logo.png" alt="Tala PDF" width="380"></p>
 
 # Tala PDF
 

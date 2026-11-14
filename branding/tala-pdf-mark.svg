@@ -1,8 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><mask id="a2-k" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><rect width="512" height="512" fill="#fff"/><g fill="#000"><g transform="translate(138.44 431.8) rotate(-36)"><path d="M-12 0L51.15 -26.5L390.42 -26.5L390.42 26.5L51.15 26.5Z"/></g></g></mask></defs>
-  <path d="M256 70L300.9 208.2L446.21 208.2L328.65 293.61L373.56 431.8L256 346.39L138.44 431.8L183.35 293.61L65.79 208.2L211.1 208.2ZM256 131.49L287.1 227.2L387.74 227.2L306.32 286.35L337.42 382.06L256 322.91L174.58 382.06L205.68 286.35L124.26 227.2L224.9 227.2Z" fill="#1b2338" fill-rule="evenodd" mask="url(#a2-k)"/><clipPath id="a2-c"><path d="M256 270L258 30L556 -30L556 208.2Z"/></clipPath><path d="M256 70L300.9 208.2L446.21 208.2L328.65 293.61L373.56 431.8L256 346.39L138.44 431.8L183.35 293.61L65.79 208.2L211.1 208.2ZM256 131.49L287.1 227.2L387.74 227.2L306.32 286.35L337.42 382.06L256 322.91L174.58 382.06L205.68 286.35L124.26 227.2L224.9 227.2Z" fill="#e2a400" fill-rule="evenodd" mask="url(#a2-k)" clip-path="url(#a2-c)"/>
-  <g transform="translate(138.44 431.8) rotate(-36)">
-    <path d="M0 0L51.15 -16.5L51.15 16.5Z" fill="#f7deb0"/>
-    <path d="M0 0L18.41 -5.94L18.41 5.94Z" fill="#1b2338"/>
-    <rect x="51.15" y="-16.5" width="304.52" height="33" fill="#e2a400"/>
-    <path d="M355.67 -16.5H373.16A7.26 7.26 0 0 1 380.42 -9.24V9.24A7.26 7.26 0 0 1 373.16 16.5H355.67Z" fill="#e8664f"/>
-  </g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>
+    <mask id="a-s" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><rect width="512" height="512" fill="#fff"/><path transform="translate(135.5 437.85) rotate(-36)" d="M-28.3 0L59.45 -29.73H399.16V29.73H59.45Z" fill="#000"/></mask>
+    <mask id="a-p" maskUnits="userSpaceOnUse" x="-200" y="-200" width="789.93" height="400"><rect x="-200" y="-200" width="789.93" height="400" fill="#fff"/><path d="M22.59 -20.5h6.92v41h-6.92ZM59.45 -20.5h9.22v41h-9.22ZM361.23 -20.5h9.22v41h-9.22Z" fill="#000"/></mask>
+  </defs>
+  <path d="M256 67L302.03 208.65L450.97 208.65L330.47 296.2L376.5 437.85L256 350.3L135.5 437.85L181.53 296.2L61.03 208.65L209.97 208.65Z" fill="#1b2338" mask="url(#a-s)"/>
+  <g transform="translate(135.5 437.85) rotate(-36)"><path d="M0 0L59.45 -20.5H389.93V20.5H59.45Z" fill="#1b2338" mask="url(#a-p)"/></g></svg>
