@@ -1,7 +1,8 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('desktop', {
-  open: (multiple) => ipcRenderer.invoke('open-dialog', multiple),
+  open: (multiple, exts) => ipcRenderer.invoke('open-dialog', multiple, exts),
+  htmlToPdf: (html) => ipcRenderer.invoke('html-to-pdf', html),
   read: (path) => ipcRenderer.invoke('read', path),
   write: (path, bytes) => ipcRenderer.invoke('write', path, bytes),
   saveAs: (name, bytes) => ipcRenderer.invoke('save-as', name, bytes),

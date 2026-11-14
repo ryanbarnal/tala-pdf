@@ -6,13 +6,23 @@ export const hasFsAccess = 'showOpenFilePicker' in window;
 const TYPES = {
   pdf: { description: 'PDF documents', accept: { 'application/pdf': ['.pdf'] } },
   image: { description: 'Images', accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'] } },
+  office: {
+    description: 'Documents to convert',
+    accept: { 'application/octet-stream': ['.docx', '.xlsx', '.csv', '.pptx', '.txt', '.md', '.html', '.htm'] },
+  },
 };
+/** Everything the Open button accepts: PDFs, plus files that are converted to PDF on opening. */
+TYPES.any = {
+  description: 'PDFs, documents and images',
+  accept: { 'application/octet-stream': [...TYPES.pdf.accept['application/pdf'], ...TYPES.office.accept['application/octet-stream'], ...TYPES.image.accept['image/*']] },
+};
+export const EXT = Object.fromEntries(Object.entries(TYPES).map(([k, t]) => [k, Object.values(t.accept).flat()]));
 
 function pickWithInput(kind, multiple, capture) {
   return new Promise((resolve) => {
     const inp = document.createElement('input');
     inp.type = 'file';
-    inp.accept = kind === 'pdf' ? 'application/pdf,.pdf' : 'image/*';
+    inp.accept = kind === 'image' ? 'image/*' : EXT[kind].join(',') + (kind === 'pdf' ? ',application/pdf' : '');
     inp.multiple = multiple;
     if (capture) inp.capture = 'environment';
     inp.style.display = 'none';
@@ -32,7 +42,7 @@ function pickWithInput(kind, multiple, capture) {
 
 /** Returns [{name, bytes, ref, file}] — ref is a path (desktop) or file handle (web), when available. */
 export async function openFiles(kind = 'pdf', { multiple = true, capture = false } = {}) {
-  if (desk && kind === 'pdf') return desk.open(multiple);
+  if (desk && kind !== 'image') return desk.open(multiple, EXT[kind].map((e) => e.slice(1)));
   if (hasFsAccess && !capture) {
     let handles;
     try {
@@ -43,7 +53,7 @@ export async function openFiles(kind = 'pdf', { multiple = true, capture = false
     return Promise.all(
       handles.map(async (hd) => {
         const file = await hd.getFile();
-        return { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()), ref: kind === 'pdf' ? hd : null, file };
+        return { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()), ref: /\.pdf$/i.test(file.name) ? hd : null, file };
       }),
     );
   }

@@ -113,6 +113,22 @@ async function rasterText(a, ow, oh, nowrap) {
   return canvasToBytes(c);
 }
 
+/** Text positions from pdf.js, in the same shape as OCR words, for pages saved as images. */
+async function textWords(jsPage, viewport) {
+  const tc = await jsPage.getTextContent();
+  const out = [];
+  for (const it of tc.items) {
+    const text = (it.str || '').trim();
+    if (!text) continue;
+    const m = pdfjsLib.Util.transform(viewport.transform, it.transform);
+    if (Math.abs(m[1]) > 0.02 * Math.abs(m[0]) + 0.01) continue; // rotated text
+    const fh = Math.hypot(m[2], m[3]);
+    if (fh < 2 || !it.width) continue;
+    out.push({ text, x: m[4], y: m[5] - fh * 0.82, w: it.width * viewport.scale, h: fh });
+  }
+  return out;
+}
+
 /**
  * Delete every object that can no longer be reached from the document root. Without this, pages that
  * were deleted or redacted would stay inside the saved file where a tool could still extract them.
@@ -146,30 +162,32 @@ function sweepUnreachable(ctx) {
 export async function buildPdf(doc, opts = {}) {
   const primary = doc.primarySource();
   if (!primary) throw new Error('This document has no pages.');
+  // An empty password unlocks files that open freely but carry an owner password (locked permissions),
+  // which is common for manuals, statements and e-books.
+  const parse = (src) => PDFDocument.load(src.bytes, { password: src.password || '', updateMetadata: false });
   const loaded = new Map();
+  const broken = new Set(); // sources the writer cannot parse; their pages are saved as images
   const load = async (src) => {
-    if (!loaded.has(src.id)) {
-      loaded.set(
-        src.id,
-        await PDFDocument.load(src.bytes, {
-          password: src.password || undefined,
-          ignoreEncryption: false,
-          updateMetadata: false,
-        }),
-      );
+    if (!loaded.has(src.id) && !broken.has(src.id)) {
+      try {
+        loaded.set(src.id, await parse(src));
+      } catch (e) {
+        console.warn('cannot rewrite', src.name, e);
+        broken.add(src.id);
+      }
     }
-    return loaded.get(src.id);
+    return loaded.get(src.id) || null;
   };
 
   let out;
   try {
-    out = await PDFDocument.load(primary.bytes, {
-      password: primary.password || undefined,
-      updateMetadata: false,
-    });
+    out = await parse(primary);
   } catch (e) {
-    throw new Error(`"${primary.name}" uses PDF features this app cannot rewrite (${e.message}).`);
+    console.warn('cannot rewrite', primary.name, e);
+    broken.add(primary.id);
+    out = await PDFDocument.create();
   }
+  opts.flattened = 0;
   // Pages are re-linked into a new flat page tree at the end, so first copy down anything a page
   // inherits from its old parent nodes.
   const orig = out.getPages();
@@ -214,8 +232,17 @@ export async function buildPdf(doc, opts = {}) {
     let page;
     let toPdf; // display -> pdf user space
 
-    if (redacts.length) {
-      // Permanent removal: the page becomes a flat image with the redacted areas burned in.
+    const from = broken.has(src.id) ? null : src === primary ? out : await load(src);
+    const flatten = redacts.length || !from;
+    let words = pg.ocr;
+    if (!from) {
+      opts.flattened++;
+      if (!words) words = await textWords(jsPage, viewport);
+    }
+
+    if (flatten) {
+      // The page becomes a flat image: for redaction (areas burned in), or when the writer cannot
+      // parse the source file. In the second case the page's text is kept as an invisible layer.
       const k = 2.5;
       const vp = jsPage.getViewport({ scale: k, rotation: viewport.rotation });
       const c = document.createElement('canvas');
@@ -242,7 +269,6 @@ export async function buildPdf(doc, opts = {}) {
         used.add(pg.idx);
         page = orig[pg.idx];
       } else {
-        const from = src === primary ? out : await load(src);
         [page] = await out.copyPages(from, [pg.idx]);
       }
       if (pg.rot) page.setRotation(degrees((page.getRotation().angle + pg.rot) % 360));
@@ -259,10 +285,10 @@ export async function buildPdf(doc, opts = {}) {
     const end = () => ops(popGraphicsState());
 
     // Invisible OCR text so scanned pages become searchable.
-    if (pg.ocr?.length && !redacts.length) {
+    if (words?.length && !redacts.length) {
       const font = await getFont('sans');
       const gs = gstate(page, 'ocr', { ca: 0, CA: 0 });
-      for (const w of pg.ocr) {
+      for (const w of words) {
         const s = w.text.replace(/[^\x20-\x7e\xa1-\xff]/g, '');
         if (!s || !canEncode(font, s)) continue;
         const size = Math.max(2, w.h);
@@ -424,7 +450,7 @@ export async function buildPdf(doc, opts = {}) {
   for (const ref of finalRefs) out.context.lookup(ref).set(PDFName.of('Parent'), treeRef);
   out.pageCache?.invalidate?.();
 
-  await applyForms(out, primary);
+  if (!broken.has(primary.id)) await applyForms(out, primary);
 
   // Pages of the original that are no longer used may still be pointed at by form fields, bookmarks
   // or link targets. Empty them so nothing of their content survives, then drop unreachable objects.

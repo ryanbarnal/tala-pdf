@@ -1,4 +1,5 @@
-const { app, BrowserWindow, dialog, ipcMain, protocol, net, Menu, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, protocol, net, Menu, shell, session } = require('electron');
+const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { pathToFileURL } = require('node:url');
@@ -20,9 +21,39 @@ const pdfArgs = (argv) => argv.filter((a) => /\.pdf$/i.test(a) && !a.startsWith(
 
 async function readEntry(p) {
   const bytes = new Uint8Array(await fs.readFile(p));
-  allowed.add(p);
-  app.addRecentDocument(p);
-  return { name: path.basename(p), bytes, ref: p };
+  const isPdf = /\.pdf$/i.test(p);
+  if (isPdf) {
+    allowed.add(p);
+    app.addRecentDocument(p);
+  }
+  // Only PDFs are saved back in place; other files are converted into a new, unsaved PDF.
+  return { name: path.basename(p), bytes, ref: isPdf ? p : null };
+}
+
+/**
+ * Turn converted HTML (from Word, Excel, PowerPoint or text files) into a PDF with Chromium's own
+ * PDF printer, so text stays real, selectable text. Runs in a hidden window with scripts disabled
+ * and no network access.
+ */
+async function htmlToPdf(html) {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'tala-convert-'));
+  const file = path.join(dir, 'doc.html');
+  await fs.writeFile(file, html, 'utf8');
+  const ses = session.fromPartition('tala-convert');
+  ses.webRequest.onBeforeRequest((details, cb) => cb({ cancel: !/^(file|data|blob):/.test(details.url) }));
+  const w = new BrowserWindow({
+    show: false,
+    width: 900,
+    height: 1200,
+    webPreferences: { javascript: false, sandbox: true, session: ses, contextIsolation: true },
+  });
+  try {
+    await w.loadFile(file);
+    return new Uint8Array(await w.webContents.printToPDF({ printBackground: true, preferCSSPageSize: true }));
+  } finally {
+    w.destroy();
+    fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 async function sendFile(p) {
@@ -113,13 +144,18 @@ if (!app.requestSingleInstanceLock()) {
     ipcMain.on('allow-path', (_e, p) => {
       if (typeof p === 'string' && /\.pdf$/i.test(p)) allowed.add(p);
     });
-    ipcMain.handle('open-dialog', async (_e, multiple) => {
+    ipcMain.handle('open-dialog', async (_e, multiple, exts) => {
+      const extensions = Array.isArray(exts) && exts.length ? exts.filter((x) => /^[a-z0-9]{1,5}$/i.test(x)) : ['pdf'];
       const res = await dialog.showOpenDialog(win, {
         properties: ['openFile', ...(multiple ? ['multiSelections'] : [])],
-        filters: [{ name: 'PDF documents', extensions: ['pdf'] }],
+        filters: [{ name: extensions.length > 1 ? 'Supported files' : 'PDF documents', extensions }],
       });
       if (res.canceled) return [];
       return Promise.all(res.filePaths.map(readEntry));
+    });
+    ipcMain.handle('html-to-pdf', async (_e, html) => {
+      if (typeof html !== 'string') throw new Error('Nothing to convert.');
+      return htmlToPdf(html);
     });
     ipcMain.handle('read', async (_e, p) => {
       // Reopening a recent file: only PDFs, and only by a path this app saved earlier.

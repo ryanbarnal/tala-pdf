@@ -60,6 +60,11 @@ import {
   Scissors,
   Files,
   ImagePlus,
+  FileDown,
+  FileSpreadsheet,
+  Presentation,
+  FileInput,
+  GripVertical,
 } from 'lucide';
 
 const L = {
@@ -123,6 +128,11 @@ const L = {
   Scissors,
   Files,
   ImagePlus,
+  FileDown,
+  FileSpreadsheet,
+  Presentation,
+  FileInput,
+  GripVertical,
 };
 
 /** Tiny DOM builder: h('div.cls#id', {attrs/on*}, ...children) */

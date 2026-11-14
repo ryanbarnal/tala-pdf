@@ -2,7 +2,7 @@ import 'pdfjs-dist/web/pdf_viewer.css';
 import './style.css';
 import { zipSync } from 'fflate';
 import { h, icon, toast, fmtSize, fmtAgo, debounce, uid, canvasToBytes, readAsDataUrl, loadImage, baseName, clamp } from './util.js';
-import { Doc, addSource, pagesFromSource, sources, pdfjsLib, pageView, FONT_CSS, TEXT_PAD, LINE_H } from './model.js';
+import { Doc, addSource, pagesFromSource, sources, pdfjsLib, pageView, rotatePage, FONT_CSS, TEXT_PAD, LINE_H } from './model.js';
 import { Viewer, DRAW_TOOLS, MARKUP_TOOLS } from './viewer.js';
 import { Organizer, lazyThumbs, clonePage } from './organize.js';
 import { buildPdf, blankPdf, imagesToPdf, rasterizePdf } from './export.js';
@@ -10,6 +10,8 @@ import { modal, confirmDlg, askPassword, askNote, signatureDialog, progress } fr
 import * as fsx from './platform.js';
 import * as store from './store.js';
 import { ocrPage, hasText } from './ocr.js';
+import { convertToPdf, CONVERTIBLE, UNSUPPORTED_HINT } from './convert.js';
+import * as ex from './exporters.js';
 import { APP_NAME } from './config.js';
 
 const TOOLS = [
@@ -120,6 +122,8 @@ const toolBtns = {};
 const undoBtn = tb('Undo2', 'Undo (Ctrl+Z)', () => app.doc?.doUndo());
 const redoBtn = tb('Redo2', 'Redo (Ctrl+Y)', () => app.doc?.doRedo());
 const saveBtn = tb('Save', 'Save (Ctrl+S)', () => save(false));
+const saveAsBtn = tb('SaveAll', 'Save as… (Ctrl+Shift+S)', () => save(true), { className: 'iconbtn wide-only' });
+const exportBtn = tb('FileDown', 'Export to Word, Excel, PowerPoint, images or text', () => exportDialog(), { className: 'iconbtn wide-only' });
 const orgBtn = h('button.btn.small', { type: 'button', title: 'Reorder, rotate, delete, merge and split pages', onClick: () => setMode(app.mode === 'organize' ? 'view' : 'organize') }, icon('LayoutGrid', 16), h('span', 'Pages'));
 
 toolbar.append(
@@ -128,6 +132,8 @@ toolbar.append(
     tb('PanelLeft', 'Show or hide the sidebar', () => toggleSidebar()),
     tb('FolderOpen', 'Open (Ctrl+O)', () => openPicker()),
     saveBtn,
+    saveAsBtn,
+    exportBtn,
     tb('Search', 'Search (Ctrl+F)', () => openSearch()),
   ),
   sep(),
@@ -202,7 +208,7 @@ function popMenu(anchor, items) {
 function moreMenu(anchor) {
   const d = app.doc;
   popMenu(anchor, [
-    { icon: 'SaveAll', label: 'Save as…', onClick: () => save(true) },
+    ...(innerWidth <= 760 ? [{ icon: 'SaveAll', label: 'Save as…', onClick: () => save(true) }] : []),
     { icon: 'Printer', label: 'Print', onClick: printDoc },
     ...(fsx.canShare() ? [{ icon: 'Share2', label: 'Share', onClick: shareDoc }] : []),
     '-',
@@ -212,8 +218,7 @@ function moreMenu(anchor) {
     '-',
     { icon: 'Lock', label: d?.protect ? 'Password: on' : 'Protect with password', onClick: protectDialog },
     { icon: 'Minimize2', label: 'Reduce file size', onClick: compressDialog },
-    { icon: 'FileImage', label: 'Export pages as images', onClick: exportImages },
-    { icon: 'FileType', label: 'Export text', onClick: exportText },
+    { icon: 'FileDown', label: 'Export…', onClick: () => exportDialog() },
     '-',
     { icon: 'Contrast', label: viewerEl.classList.contains('invert') ? 'Normal page colours' : 'Dark pages for reading', onClick: toggleInvert },
     { icon: 'X', label: 'Close document', onClick: () => closeDoc(d) },
@@ -328,6 +333,10 @@ function drawTabs() {
 
 function setMode(mode) {
   if (mode !== 'home' && !app.doc) mode = 'home';
+  if (mode === 'view' && app.mode === 'home' && sidebar.hidden && !phone() && store.getPref('sidebar', true)) {
+    sidebar.hidden = false;
+    queueMicrotask(drawSidebar);
+  }
   if (app.mode === 'view') app.viewer.saveViewState();
   app.mode = mode;
   homeEl.hidden = mode !== 'home';
@@ -435,8 +444,16 @@ async function closeDoc(doc) {
 /* ================= opening and creating ================= */
 
 async function openEntries(entries) {
+  const imgs = [];
   for (const e of entries) {
     if (!e) continue;
+    const ext = (e.name.split('.').pop() || '').toLowerCase();
+    if (!/\.pdf$/i.test(e.name)) {
+      if (CONVERTIBLE.test(e.name)) await openConverted(e);
+      else if (/^(png|jpe?g|webp|gif|bmp)$/.test(ext)) imgs.push(e.file || new File([e.bytes], e.name, { type: 'image/' + (ext === 'jpg' ? 'jpeg' : ext) }));
+      else toast(UNSUPPORTED_HINT[ext] || `"${e.name}" is not a file this app can open.`, 'error');
+      continue;
+    }
     const dup = typeof e.ref === 'string' && app.docs.find((d) => d.ref === e.ref);
     if (dup) {
       activate(dup);
@@ -449,15 +466,44 @@ async function openEntries(entries) {
       doc.pages = pagesFromSource(src);
       if (src.password) doc.protect = { password: src.password };
       addDoc(doc);
-      store.addRecent(doc, e.bytes);
+      remember(doc, e.bytes);
     } catch (err) {
       if (err.message !== 'cancelled') toast(err.message, 'error');
     }
   }
+  if (imgs.length) {
+    const doc = new Doc(imgs[0].name.replace(/\.[a-z0-9]+$/i, '') + '.pdf');
+    doc.pages = await imagesToPages(imgs);
+    addDoc(doc, { dirty: true });
+  }
 }
 
 async function openPicker() {
-  openEntries(await fsx.openFiles('pdf'));
+  openEntries(await fsx.openFiles('any'));
+}
+
+async function convertPicker() {
+  openEntries(await fsx.openFiles('office'));
+}
+
+/** Turn a Word, Excel, PowerPoint, text or HTML file into a new PDF document. */
+async function openConverted(e) {
+  const pr = progress('Converting ' + e.name);
+  try {
+    const res = await convertToPdf(e.name, e.bytes, (text, frac) => pr.set(text, frac));
+    const name = e.name.replace(/\.[a-z0-9]+$/i, '') + '.pdf';
+    const src = await addSource(res.bytes, name, askPassword);
+    const doc = new Doc(name);
+    doc.pages = pagesFromSource(src);
+    if (res.words) doc.pages.forEach((p, i) => (p.ocr = res.words[i] || null));
+    pr.close();
+    addDoc(doc, { dirty: true });
+    toast(`Converted to PDF. ${res.words ? 'Pages were drawn as images with searchable text. ' : ''}Save it to keep it.`);
+  } catch (err) {
+    pr.close();
+    console.error(err);
+    toast(`Could not convert "${e.name}": ${err.message}`, 'error');
+  }
 }
 
 async function newBlank() {
@@ -572,6 +618,25 @@ async function openRecent(r) {
 
 /* ================= home ================= */
 
+/** Add to recent files with a small picture of the first page. */
+async function remember(doc, bytes) {
+  let thumb = null;
+  try {
+    const pg = doc.pages[0];
+    const { page, viewport } = await pageView(pg, 180 / pg.w);
+    const c = document.createElement('canvas');
+    c.width = Math.round(viewport.width);
+    c.height = Math.round(viewport.height);
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: g, viewport }).promise;
+    thumb = c.toDataURL('image/jpeg', 0.75);
+  } catch {}
+  await store.addRecent(doc, bytes, thumb);
+  if (app.mode === 'home') drawHome();
+}
+
 async function drawHome() {
   const [recents, autos] = await Promise.all([store.getRecents(), store.listAutosaves()]);
   const openIds = new Set(app.docs.map((d) => d.id));
@@ -585,8 +650,9 @@ async function drawHome() {
       h('p.muted.lead', fsx.isDesktop ? 'Files stay on this computer.' : 'Files stay on this device. Nothing is uploaded.'),
       h(
         'div.home-actions',
-        action('FolderOpen', 'Open PDF', 'Or drop files anywhere', openPicker),
+        action('FolderOpen', 'Open', 'PDFs, documents or images. Or drop files anywhere', openPicker),
         action('FilePlus2', 'Blank document', 'Start from an empty A4 page', newBlank),
+        action('FileInput', 'Convert to PDF', 'Word, Excel, PowerPoint, text or web pages', convertPicker),
         action('Images', 'From images', 'Turn photos or scans into a PDF', () => newFromImages(false)),
         coarse ? action('Camera', 'Scan with camera', 'Photograph a page', () => newFromImages(true)) : null,
         action('Combine', 'Merge PDFs', 'Join several files into one', mergeNew),
@@ -609,11 +675,24 @@ async function drawHome() {
         ? h(
             'section.home-list',
             h('h2', 'Recent'),
-            recents.map((r) =>
-              h(
-                'div.file-row',
-                h('button.file-main', { type: 'button', onClick: () => openRecent(r) }, icon('FileText', 18), h('span.file-name', r.name), h('span.file-meta', `${r.pages} pages · ${fmtSize(r.size)} · ${fmtAgo(r.time)}`)),
-                h('button.iconbtn', { type: 'button', 'aria-label': 'Remove ' + r.name + ' from recent files', title: 'Remove from list', onClick: async () => (await store.removeRecent(r.id), drawHome()) }, icon('X', 16)),
+            h(
+              'div.recent-grid',
+              recents.map((r) =>
+                h(
+                  'div.recent',
+                  h(
+                    'button.recent-open',
+                    { type: 'button', title: r.name, onClick: () => openRecent(r) },
+                    h('span.recent-thumb', r.thumb ? h('img', { src: r.thumb, alt: '', loading: 'lazy' }) : icon('FileText', 28)),
+                    h('span.recent-name', r.name),
+                    h('span.recent-meta', `${r.pages} page${r.pages === 1 ? '' : 's'} · ${fmtAgo(r.time)}`),
+                  ),
+                  h(
+                    'button.iconbtn.recent-x',
+                    { type: 'button', 'aria-label': 'Remove ' + r.name + ' from recent files', title: 'Remove from list', onClick: async () => (await store.removeRecent(r.id), drawHome()) },
+                    icon('X', 15),
+                  ),
+                ),
               ),
             ),
           )
@@ -631,16 +710,21 @@ sidebar.append(sideTabs, sideBody);
 const searchState = { q: '', results: null, busy: false };
 let thumbIo = null;
 
-function toggleSidebar(on) {
+const phone = () => innerWidth <= 760;
+function toggleSidebar(on, remember = on === undefined) {
   const show = on ?? sidebar.hidden;
   sidebar.hidden = !show;
-  scrim.hidden = !show || innerWidth > 760;
+  if (remember && !phone()) store.setPref('sidebar', show);
+  sidebar.classList.toggle('strip', phone() && sideTab === 'pages');
+  scrim.hidden = !show || !phone() || sidebar.classList.contains('strip');
   if (show) drawSidebar();
   if (app.viewer.fit && app.mode === 'view') requestAnimationFrame(() => app.viewer.fitWidth());
 }
 
 function drawSidebar() {
   if (sidebar.hidden || !app.doc) return;
+  sidebar.classList.toggle('strip', phone() && sideTab === 'pages');
+  scrim.hidden = !phone() || sidebar.classList.contains('strip');
   sideTabs.replaceChildren(
     ...[
       ['pages', 'Pages'],
@@ -671,31 +755,102 @@ function drawSidebar() {
 function drawThumbs() {
   if (sidebar.hidden || sideTab !== 'pages' || !app.doc) return;
   thumbIo?.disconnect();
-  const list = h('div.thumbs');
+  const doc = app.doc;
+  const list = h('div.thumbs', { role: 'list' });
   sideBody.replaceChildren(list);
   thumbIo = lazyThumbs(sideBody, (id) => app.doc?.pages.find((p) => p.id === id), 120);
-  app.doc.pages.forEach((pg, i) => {
+  let dragId = null;
+  const clearMarks = () => list.querySelectorAll('.drop-before,.drop-after').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
+  doc.pages.forEach((pg, i) => {
     const slot = h('div.thumb-slot', { dataset: { id: pg.id }, style: { aspectRatio: `${pg.w} / ${pg.h}` } });
-    list.append(
-      h(
-        'button.thumb',
-        {
-          type: 'button',
-          'aria-label': 'Go to page ' + (i + 1),
-          dataset: { i },
-          onClick: () => {
-            setMode('view');
-            app.viewer.scrollToPage(i);
-            if (innerWidth <= 760) toggleSidebar(false);
-          },
+    const btn = h(
+      'button.thumb',
+      {
+        type: 'button',
+        role: 'listitem',
+        draggable: true,
+        title: `Page ${i + 1}. Drag to reorder, right-click for more.`,
+        'aria-label': 'Go to page ' + (i + 1),
+        dataset: { i, id: pg.id },
+        onClick: () => {
+          setMode('view');
+          app.viewer.scrollToPage(i);
+          if (innerWidth <= 760 && !sidebar.classList.contains('strip')) toggleSidebar(false);
         },
-        slot,
-        h('span.thumb-num', i + 1),
-      ),
+        onContextmenu: (e) => {
+          e.preventDefault();
+          thumbMenu(e.currentTarget, i);
+        },
+        onDragstart: (e) => {
+          dragId = pg.id;
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', 'page');
+          btn.classList.add('dragging');
+        },
+        onDragend: () => {
+          dragId = null;
+          btn.classList.remove('dragging');
+          clearMarks();
+        },
+        onDragover: (e) => {
+          if (!dragId) return;
+          e.preventDefault();
+          const r = btn.getBoundingClientRect();
+          const horizontal = sidebar.classList.contains('strip');
+          const after = horizontal ? e.clientX > r.left + r.width / 2 : e.clientY > r.top + r.height / 2;
+          clearMarks();
+          btn.classList.add(after ? 'drop-after' : 'drop-before');
+        },
+        onDrop: (e) => {
+          if (!dragId) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const after = btn.classList.contains('drop-after');
+          clearMarks();
+          if (dragId === pg.id) return;
+          const moving = doc.pages.find((p) => p.id === dragId);
+          doc.change('pages', () => {
+            const rest = doc.pages.filter((p) => p.id !== dragId);
+            rest.splice(rest.findIndex((p) => p.id === pg.id) + (after ? 1 : 0), 0, moving);
+            doc.pages = rest;
+          });
+          app.viewer.scrollToPage(doc.pages.indexOf(moving));
+        },
+      },
+      slot,
+      h('span.thumb-num', i + 1),
     );
+    list.append(btn);
     thumbIo.observe(slot);
   });
   markCurrentThumb(true);
+}
+
+function thumbMenu(anchor, i) {
+  const doc = app.doc;
+  const pg = doc.pages[i];
+  const replace = (fn) => doc.change('pages', () => (doc.pages = fn([...doc.pages])));
+  popMenu(anchor, [
+    { icon: 'RotateCcw', label: 'Rotate left', onClick: () => replace((ps) => ((ps[i] = rotatePage(pg, -1)), ps)) },
+    { icon: 'RotateCw', label: 'Rotate right', onClick: () => replace((ps) => ((ps[i] = rotatePage(pg, 1)), ps)) },
+    { icon: 'Copy', label: 'Duplicate', onClick: () => replace((ps) => (ps.splice(i + 1, 0, clonePage(pg)), ps)) },
+    {
+      icon: 'FilePlus2',
+      label: 'Insert blank page after',
+      onClick: async () => {
+        const blank = pagesFromSource(await addSource(await blankPdf(pg.w, pg.h), 'Blank page'));
+        replace((ps) => (ps.splice(i + 1, 0, ...blank), ps));
+      },
+    },
+    { icon: 'FileOutput', label: 'Extract to new tab', onClick: () => app.newDocFromPages([clonePage(pg)], baseName(doc.name) + ` (page ${i + 1}).pdf`) },
+    '-',
+    {
+      icon: 'Trash2',
+      label: 'Delete page',
+      disabled: doc.pages.length < 2,
+      onClick: () => replace((ps) => (ps.splice(i, 1), ps)),
+    },
+  ]);
 }
 
 function markCurrentThumb(scroll) {
@@ -704,7 +859,7 @@ function markCurrentThumb(scroll) {
   for (const t of sideBody.querySelectorAll('.thumb')) {
     const on = +t.dataset.i === cur;
     t.classList.toggle('on', on);
-    if (on && (scroll || true)) t.scrollIntoView({ block: 'nearest' });
+    if (on && (scroll || true)) t.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 }
 
@@ -816,7 +971,13 @@ async function build(doc = app.doc, title = 'Preparing document') {
   const big = doc.pages.length > 25 || doc.pages.some((p) => p.annots.some((a) => a.type === 'redact'));
   const pr = big ? progress(title) : null;
   try {
-    return await buildPdf(doc, { onProgress: (i, n) => pr?.set(`Page ${Math.min(i + 1, n)} of ${n}`, i / n) });
+    const opts = { onProgress: (i, n) => pr?.set(`Page ${Math.min(i + 1, n)} of ${n}`, i / n) };
+    const bytes = await buildPdf(doc, opts);
+    const redacted = doc.pages.filter((p) => p.annots.some((a) => a.type === 'redact')).length;
+    if (opts.flattened > 0 && opts.flattened !== redacted) {
+      toast(`${opts.flattened} page${opts.flattened > 1 ? 's were' : ' was'} saved as ${opts.flattened > 1 ? 'images' : 'an image'} with searchable text, because the original file uses PDF features this app cannot rewrite.`);
+    }
+    return bytes;
   } finally {
     pr?.close();
   }
@@ -839,7 +1000,7 @@ async function save(saveAs) {
     doc.name = res.name;
     doc.dirty = false;
     await store.clearAutosave(doc.id);
-    store.addRecent(doc, bytes);
+    remember(doc, bytes);
     drawTabs();
     syncDocUi();
     toast(res.how === 'downloaded' ? 'Saved to your downloads' : 'Saved');
@@ -905,31 +1066,124 @@ async function printDoc() {
   }
 }
 
-async function exportImages() {
-  const pr = progress('Exporting images');
-  try {
-    const bytes = await buildPdf(app.doc);
-    const pages = await renderExported(bytes, 150, 'image/png', undefined, (i, n) => pr.set(`Page ${i} of ${n}`, i / n));
-    pr.close();
-    const base = baseName(app.doc.name);
-    if (pages.length === 1) await fsx.saveBytes(base + '.png', pages[0].bytes, null, true, 'image/png');
-    else {
-      const files = {};
-      pages.forEach((p, i) => (files[`${base}-${String(i + 1).padStart(3, '0')}.png`] = [p.bytes, { level: 0 }]));
-      await fsx.saveBytes(base + '-images.zip', zipSync(files), null, true, 'application/zip');
-    }
-  } catch (e) {
-    pr.close();
-    toast('Could not export: ' + e.message, 'error');
+/** Parse "1-3, 5, 8-" into zero-based page indices. */
+function parseRange(text, count) {
+  const out = new Set();
+  for (const part of text.split(/[,;\s]+/).filter(Boolean)) {
+    const m = part.match(/^(\d*)\s*[-–]\s*(\d*)$/);
+    if (m) {
+      const a = m[1] ? +m[1] : 1;
+      const b = m[2] ? +m[2] : count;
+      for (let i = Math.max(1, a); i <= Math.min(count, b); i++) out.add(i - 1);
+    } else if (/^\d+$/.test(part) && +part >= 1 && +part <= count) out.add(+part - 1);
+    else return null;
   }
+  return [...out].sort((x, y) => x - y);
 }
 
-async function exportText() {
-  const parts = [];
-  for (const pg of app.doc.pages) parts.push((await pageText(pg)).trim());
-  const text = parts.join('\n\n\f');
-  if (!text.replace(/[\s\f]/g, '')) return toast('No text found. Run "Recognize text (OCR)" first for scanned pages.', 'error');
-  await fsx.saveBytes(baseName(app.doc.name) + '.txt', new TextEncoder().encode(text), null, true, 'text/plain');
+const EXPORTS = [
+  ['docx', 'FileText', 'Word', 'Editable text, headings and paragraphs (.docx)'],
+  ['docx-layout', 'FileText', 'Word, exact look', 'Each page as a picture, identical to the PDF (.docx)'],
+  ['xlsx', 'FileSpreadsheet', 'Excel', 'Text placed in rows and columns, one sheet per page (.xlsx)'],
+  ['pptx', 'Presentation', 'PowerPoint', 'One slide per page (.pptx)'],
+  ['png', 'FileImage', 'PNG images', 'Sharp pictures of each page'],
+  ['jpg', 'FileImage', 'JPEG images', 'Smaller pictures of each page'],
+  ['txt', 'FileType', 'Plain text', 'Just the words (.txt)'],
+  ['pdf', 'FileDown', 'PDF copy', 'A separate PDF, for example of selected pages'],
+];
+
+async function exportDialog() {
+  const doc = app.doc;
+  if (!doc) return;
+  app.viewer.commitEdit();
+  let fmt = store.getPref('exportFmt', 'docx');
+  const cur = (app.viewer.current || 0) + 1;
+  const grid = h(
+    'div.export-grid',
+    { role: 'radiogroup', 'aria-label': 'Format' },
+    EXPORTS.map(([id, ic, title, sub]) =>
+      h(
+        'label.export-opt',
+        h('input', { type: 'radio', name: 'export-fmt', value: id, id: 'exp-' + id, checked: id === fmt, onChange: () => ((fmt = id), sync()) }),
+        h('span.export-ic', icon(ic, 20)),
+        h('span.export-t', title),
+        h('span.export-s', sub),
+      ),
+    ),
+  );
+  const range = h('input#exp-range', { type: 'text', placeholder: 'e.g. 1-3, 5', autocomplete: 'off', disabled: true });
+  const pagesSel = h(
+    'div.stack.tight',
+    h('label.radio', h('input', { type: 'radio', name: 'exp-pages', value: 'all', id: 'exp-all', checked: true, onChange: () => (range.disabled = true) }), h('span', `All ${doc.pages.length} pages`)),
+    h('label.radio', h('input', { type: 'radio', name: 'exp-pages', value: 'cur', id: 'exp-cur', onChange: () => (range.disabled = true) }), h('span', `Current page (${cur})`)),
+    h('label.radio', h('input', { type: 'radio', name: 'exp-pages', value: 'range', id: 'exp-rng', onChange: () => ((range.disabled = false), range.focus()) }), h('span', 'Pages'), range),
+  );
+  const dpi = h(
+    'select#exp-dpi',
+    { 'aria-label': 'Image resolution' },
+    [
+      [96, 'Screen (96 dpi)'],
+      [150, 'Standard (150 dpi)'],
+      [300, 'Print (300 dpi)'],
+    ].map(([v, l]) => h('option', { value: v, selected: v === 150 }, l)),
+  );
+  const dpiRow = h('label.row.left', h('span.muted', 'Resolution'), dpi);
+  const err = h('p.error', { hidden: true });
+  const sync = () => (dpiRow.hidden = !['png', 'jpg'].includes(fmt));
+  sync();
+  const choice = await modal(
+    'Export',
+    h('div.stack', grid, h('div.export-cols', h('div.stack.tight', h('strong', 'Pages'), pagesSel), dpiRow), err),
+    [
+      { label: 'Cancel', value: undefined },
+      {
+        label: 'Export',
+        primary: true,
+        validate: () => {
+          const which = document.querySelector('input[name="exp-pages"]:checked').value;
+          const idx = which === 'all' ? doc.pages.map((_, i) => i) : which === 'cur' ? [cur - 1] : parseRange(range.value, doc.pages.length);
+          if (!idx?.length) {
+            err.textContent = 'Enter pages like 1-3, 5.';
+            err.hidden = false;
+            return undefined;
+          }
+          return { idx, dpi: +dpi.value };
+        },
+      },
+    ],
+    { wide: true },
+  );
+  if (!choice) return;
+  store.setPref('exportFmt', fmt);
+  const base = baseName(doc.name) + (choice.idx.length < doc.pages.length ? (choice.idx.length === 1 ? `-p${choice.idx[0] + 1}` : '-pages') : '');
+  const pr = progress('Exporting');
+  try {
+    const part = new Doc(doc.name);
+    part.pages = choice.idx.map((i) => doc.pages[i]);
+    // Other formats read the PDF back, so build it unencrypted; only a PDF copy keeps the password.
+    part.protect = fmt === 'pdf' ? doc.protect : null;
+    pr.set('Preparing pages', null);
+    const pdf = await buildPdf(part);
+    const step = (i, n) => pr.set(`Page ${i + 1} of ${n}`, i / n);
+    let out;
+    if (fmt === 'pdf') out = { name: base + (choice.idx.length < doc.pages.length ? '' : '-copy') + '.pdf', bytes: pdf, mime: ex.MIME.pdf };
+    else if (fmt === 'docx' || fmt === 'docx-layout') out = { name: base + '.docx', bytes: await ex.toDocx(pdf, { mode: fmt === 'docx' ? 'text' : 'layout', onProgress: step }), mime: ex.MIME.docx };
+    else if (fmt === 'xlsx') out = { name: base + '.xlsx', bytes: await ex.toXlsx(pdf, { onProgress: step }), mime: ex.MIME.xlsx };
+    else if (fmt === 'pptx') out = { name: base + '.pptx', bytes: await ex.toPptx(pdf, { onProgress: step }), mime: ex.MIME.pptx };
+    else if (fmt === 'png' || fmt === 'jpg') out = await ex.toImages(pdf, base, { format: fmt, dpi: choice.dpi, onProgress: step });
+    else if (fmt === 'txt') {
+      const bytes = await ex.toText(pdf);
+      if (bytes.length < 3) throw new Error('No text found. Run "Recognize text (OCR)" first for scanned pages.');
+      out = { name: base + '.txt', bytes, mime: ex.MIME.txt };
+    }
+    pr.close();
+    const res = await fsx.saveBytes(out.name, out.bytes, null, true, out.mime);
+    if (res) toast(res.how === 'downloaded' ? `Exported ${res.name} to your downloads` : `Exported ${res.name}`);
+  } catch (e) {
+    pr.close();
+    console.error(e);
+    toast('Could not export: ' + e.message, 'error');
+  }
 }
 
 app.splitDoc = async () => {
@@ -1182,6 +1436,7 @@ document.addEventListener('keydown', (e) => {
   if (!app.doc || app.mode === 'home') return;
   if (mod && k === 's') return e.preventDefault(), save(e.shiftKey);
   if (mod && k === 'p') return e.preventDefault(), printDoc();
+  if (mod && e.shiftKey && k === 'e') return e.preventDefault(), exportDialog();
   if (mod && k === 'f') return e.preventDefault(), openSearch();
   if (typing) return;
   if (mod && k === 'z') return e.preventDefault(), e.shiftKey ? app.doc.doRedo() : app.doc.doUndo();
@@ -1221,6 +1476,8 @@ window.addEventListener('drop', async (e) => {
   const files = [...e.dataTransfer.files];
   const pdfs = files.filter((f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
   const imgs = files.filter((f) => f.type.startsWith('image/'));
+  const others = files.filter((f) => !pdfs.includes(f) && !imgs.includes(f));
+  if (others.length) openEntries(await Promise.all(others.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()), ref: null }))));
   if (pdfs.length) {
     const entries = await Promise.all(pdfs.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()), ref: fsx.isDesktop ? window.desktop.pathFor?.(f) || null : null })));
     if (app.mode === 'organize') {

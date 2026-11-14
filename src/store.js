@@ -17,13 +17,13 @@ const MAX_KEEP_BYTES = 60 * 1024 * 1024;
 
 export const getRecents = () => safe(async () => (await get('recents')) || [], []);
 
-export async function addRecent(doc, bytes) {
+export async function addRecent(doc, bytes, thumb = null) {
   await safe(async () => {
     let list = (await get('recents')) || [];
     const same = (r) => (typeof doc.ref === 'string' ? r.path === doc.ref : r.name === doc.name);
     for (const r of list.filter(same)) await del('recent:' + r.id);
     list = list.filter((r) => !same(r));
-    const entry = { id: doc.id, name: doc.name, time: Date.now(), size: bytes.length, pages: doc.pages.length };
+    const entry = { id: doc.id, name: doc.name, time: Date.now(), size: bytes.length, pages: doc.pages.length, thumb };
     // The desktop app reopens from the original path. In a browser there is no path, so keep a copy.
     if (isDesktop && typeof doc.ref === 'string') entry.path = doc.ref;
     else if (bytes.length <= MAX_KEEP_BYTES) await set('recent:' + entry.id, { bytes, handle: doc.ref?.getFile ? doc.ref : null });

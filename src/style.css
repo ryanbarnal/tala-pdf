@@ -1223,6 +1223,9 @@ body.dropping::after {
   .toolbar .tgroup:last-child {
     margin-left: auto;
   }
+  .toolbar .wide-only {
+    display: none;
+  }
   .toolbar .btn.small span {
     display: none;
   }
@@ -1322,5 +1325,256 @@ body.dropping::after {
   }
   #print-root img:last-child {
     break-after: auto;
+  }
+}
+
+/* ---------- export dialog ---------- */
+dialog.modal.wide {
+  width: min(640px, calc(100vw - 32px));
+}
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.export-opt {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+}
+.export-opt:hover {
+  border-color: var(--accent);
+}
+.export-opt:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.export-opt:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.export-opt input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.export-ic {
+  grid-row: span 2;
+  color: var(--accent);
+  display: grid;
+}
+.export-t {
+  font-weight: 600;
+}
+.export-s {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.export-cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  align-items: flex-start;
+}
+.stack.tight {
+  gap: 6px;
+}
+.row.left {
+  justify-content: flex-start;
+}
+#exp-range {
+  width: 130px !important;
+  padding: 4px 8px !important;
+  margin-left: 6px;
+}
+.radio:has(#exp-range) {
+  align-items: center;
+}
+.radio:has(#exp-range) input[type='radio'] {
+  margin-top: 0;
+}
+#exp-dpi {
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 0 6px;
+}
+
+/* ---------- recent files grid ---------- */
+.recent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 18px 14px;
+}
+.recent {
+  position: relative;
+  min-width: 0;
+}
+.recent-open {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  text-align: center;
+}
+.recent-open:hover {
+  background: var(--surface);
+}
+.recent-thumb {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  color: var(--muted);
+}
+.recent-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #fff;
+  box-shadow: var(--page-shadow);
+  border-radius: 2px;
+}
+.recent-name {
+  width: 100%;
+  font-weight: 550;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-meta {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.recent-x {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 28px;
+  height: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  opacity: 0;
+}
+.recent:hover .recent-x,
+.recent-x:focus-visible {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .recent-x {
+    opacity: 1;
+  }
+}
+
+/* ---------- thumbnails sidebar, Preview style ---------- */
+.thumbs {
+  gap: 4px;
+}
+.thumb {
+  position: relative;
+  gap: 6px;
+  padding: 8px 10px 6px;
+  border-radius: 10px;
+}
+.thumb:hover {
+  background: rgb(127 127 127 / 0.1);
+}
+.thumb.on {
+  background: rgb(127 127 127 / 0.2);
+}
+.thumb.on .thumb-slot {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.thumb.on .thumb-num {
+  color: var(--fg);
+}
+.thumb.dragging {
+  opacity: 0.4;
+}
+.thumb.drop-before::before,
+.thumb.drop-after::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.thumb.drop-before::before {
+  top: -3px;
+}
+.thumb.drop-after::after {
+  bottom: -3px;
+}
+
+/* Phone: the page thumbnails become a filmstrip along the bottom, like iOS. */
+@media (max-width: 760px) {
+  .sidebar.strip {
+    inset: auto 0 0 0;
+    width: 100%;
+    height: calc(178px + env(safe-area-inset-bottom, 0px));
+    border-right: 0;
+    border-top: 1px solid var(--line);
+    padding-left: 0;
+  }
+  .sidebar.strip .side-tabs {
+    margin: 6px max(8px, env(safe-area-inset-left, 0px)) 2px;
+  }
+  .sidebar.strip .thumbs {
+    flex-direction: row;
+    align-items: flex-end;
+    height: 100%;
+    padding: 4px max(10px, env(safe-area-inset-right, 0px)) 6px max(10px, env(safe-area-inset-left, 0px));
+    overflow-x: auto;
+    width: max-content;
+  }
+  .sidebar.strip .side-body {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .sidebar.strip .thumb {
+    width: 74px;
+    padding: 5px;
+    flex: none;
+  }
+  .sidebar.strip .thumb.drop-before::before,
+  .sidebar.strip .thumb.drop-after::after {
+    top: 6px;
+    bottom: 24px;
+    left: auto;
+    right: auto;
+    width: 3px;
+    height: auto;
+  }
+  .sidebar.strip .thumb.drop-before::before {
+    left: -3px;
+  }
+  .sidebar.strip .thumb.drop-after::after {
+    right: -3px;
+  }
+  .sidebar.strip ~ #viewer .pages {
+    padding-bottom: calc(200px + env(safe-area-inset-bottom, 0px));
+  }
+  .recent-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px 8px;
   }
 }

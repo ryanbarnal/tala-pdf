@@ -63,6 +63,21 @@ const check = (name, ok, extra = '') => {
       const words = await win.evaluate(() => window.__app.doc.pages[0].ocr.map((w) => w.text).join(' '));
       check('OCR works offline inside the desktop app', /Lease agreement/.test(words), words.slice(0, 60));
     }
+    // Conversion in the desktop app uses Chromium's PDF printer, so the text is real text.
+    for (const [file, re] of [['contract.docx', /Service agreement/], ['budget.xlsx', /Quarter total/], ['review.pptx', /Quarterly review/]]) {
+      const n0 = await win.evaluate(() => window.__app.docs.length);
+      await win.evaluate(
+        ([name, bytes]) => document.dispatchEvent(new CustomEvent('test-open', { detail: { name, bytes: new Uint8Array(bytes), ref: null } })),
+        [file, [...fs.readFileSync(path.join(OUT, file))]],
+      );
+      await win.waitForFunction((n) => window.__app.docs.length > n && document.querySelector('.page canvas'), n0, { timeout: 60000 });
+      const r = await win.evaluate(async () => {
+        const d = window.__app.doc;
+        await new Promise((r) => setTimeout(r, 600));
+        return { name: d.name, pages: d.pages.length, ocr: d.pages.some((p) => p.ocr), text: [...document.querySelectorAll('.textLayer')].map((t) => t.textContent).join(' ') };
+      });
+      check(`desktop converts ${file} with real text`, !r.ocr && re.test(r.text), `${r.name}: ${r.pages} pages`);
+    }
     await win.screenshot({ path: path.join(OUT, '20-desktop.png') });
     await win.evaluate(() => window.desktop.setDirty(false));
   } finally {

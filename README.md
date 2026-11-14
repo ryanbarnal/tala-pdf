@@ -6,7 +6,9 @@ Files stay on your device. Nothing is uploaded.
 ## What it does
 
 **Read**
-- Page thumbnails, outline, zoom, text search with highlighted matches
+- Page thumbnails beside the document, like Preview: drag to reorder, right-click to rotate, duplicate,
+  insert or delete. On phones they become a filmstrip along the bottom.
+- Outline, zoom, text search with highlighted matches
 - Select and copy text, dark theme, dark pages for night reading
 - Several documents open in tabs
 
@@ -23,6 +25,18 @@ Files stay on your device. Nothing is uploaded.
 - Merge PDFs, extract pages to a new document, split into separate files
 - Create a PDF from images or a phone camera; export pages as PNG or as plain text
 
+**Convert to PDF**
+- Word (.docx), Excel (.xlsx, .csv), PowerPoint (.pptx), plain text and web pages (.html)
+- Open them like any PDF, drop them on the window, or use **Convert to PDF** on the home screen
+- In the desktop app the result has real, selectable text. In a browser each page is drawn as a
+  picture with an invisible, searchable text layer, the same way OCR works.
+
+**Export**
+- The **Export** button next to **Save as** turns the document, the current page, or a page range into:
+  Word (editable text, or an exact-look version with each page as a picture), Excel (one sheet per page,
+  text placed in rows and columns), PowerPoint (one slide per page), PNG or JPEG images, plain text,
+  or a separate PDF
+
 **Protect and shrink**
 - Password-protect a file, change or remove its password
 - Redact: marked areas are burned into the page and the original content is removed from the file
@@ -30,7 +44,7 @@ Files stay on your device. Nothing is uploaded.
 
 **Extras**
 - OCR for scanned pages (English), so they become searchable and selectable
-- Recent files, and automatic recovery of unsaved work after a crash or accidental close
+- Recent files with first-page previews, and automatic recovery of unsaved work after a crash or accidental close
 - Print, and share from a phone's share sheet
 
 ## Install
@@ -66,6 +80,13 @@ To keep it on the home screen and use it offline:
   until you run OCR on it again.
 - **Your annotations stay editable until you close the document.** Once a saved file is reopened they are
   part of the page, except sticky notes, which remain comments.
+- **Locked PDFs** (ones that open freely but restrict editing, such as many manuals) can be edited and
+  saved. The saved copy no longer carries the original restrictions.
+- **Converting** keeps text, headings, tables, pictures and slide layouts, but not every detail: Word
+  page breaks, headers and footers, Excel charts, and PowerPoint themes, animations and charts are not
+  reproduced. Older .doc, .xls and .ppt files must be saved as .docx, .xlsx or .pptx first.
+- **Exporting to Word or Excel** rebuilds the document from its text, so complex layouts come out simplified.
+  Choose "Word, exact look" when appearance matters more than editing.
 - **Strong compression** turns pages into images, which removes selectable text.
 - **OCR** recognises English. On the web the engine (about 20 MB) is downloaded the first time you use it
   and then kept for offline use; the desktop app ships with it.
@@ -110,6 +131,8 @@ separately (`npm i -D playwright` and `npx playwright install chromium`).
 | `src/platform.js` | File open/save for desktop, browsers with file access, and everything else |
 | `src/store.js` | Recent files, recovery snapshots, saved signatures (all stored locally) |
 | `src/ocr.js` | Text recognition |
+| `src/convert.js` | Word, Excel, PowerPoint, text and HTML into PDF |
+| `src/exporters.js` | PDF into Word, Excel, PowerPoint, images and text |
 | `electron/` | Desktop shell |
 
 To rename the app, change `APP_NAME` in `src/config.js`, `productName` in `package.json`,
@@ -146,5 +169,7 @@ Unsigned installers work, with the one-time prompts described above. To remove t
 ## Built with
 
 [pdf.js](https://mozilla.github.io/pdf.js/) for rendering, [pdf-lib](https://github.com/cantoo-scribe/pdf-lib)
-for writing, [Tesseract.js](https://tesseract.projectnaptha.com/) for OCR, [Electron](https://www.electronjs.org/)
+for writing, [Tesseract.js](https://tesseract.projectnaptha.com/) for OCR, [mammoth](https://github.com/mwilliamson/mammoth.js),
+[ExcelJS](https://github.com/exceljs/exceljs), [docx](https://docx.js.org), [PptxGenJS](https://gitbrent.github.io/PptxGenJS/)
+and [html2canvas](https://html2canvas.hertzen.com) for conversions, [Electron](https://www.electronjs.org/)
 for the desktop app, and [Lucide](https://lucide.dev) icons.

@@ -310,10 +310,15 @@ async function main() {
       check('OCR text is saved into the PDF', /Lease/.test(found) && /Quezon/.test(found), found.slice(0, 80));
 
       // exports
-      const [dli] = await Promise.all([page.waitForEvent('download'), menu('Export pages as images')]);
-      check('export page as image', dli.suggestedFilename() === 'scan.png', dli.suggestedFilename());
-      const [dlt] = await Promise.all([page.waitForEvent('download'), menu('Export text')]);
-      check('export text', dlt.suggestedFilename() === 'scan.txt');
+      const exportAs = async (id) => {
+        await menu('Export…');
+        await page.check('#exp-' + id, { force: true });
+        const [dl] = await Promise.all([page.waitForEvent('download'), page.click('dialog .btn.primary')]);
+        return dl.suggestedFilename();
+      };
+      const imgName = await exportAs('png');
+      check('export page as image', imgName === 'scan.png', imgName);
+      check('export text', (await exportAs('txt')) === 'scan.txt');
 
       // compress (strong) on the scan
       await menu('Reduce file size');
