@@ -73,7 +73,7 @@ const printRoot = h('div#print-root');
 document.getElementById('app').append(
   h(
     'header.topbar',
-    h('div.brand', h('span.brand-mark', icon('FileText', 16)), h('span.brand-name', APP_NAME)),
+    h('div.brand', h('img.brand-mark', { src: './mark.svg', alt: '', width: 28, height: 28 }), h('span.brand-name', APP_NAME)),
     tabsEl,
     h('button.iconbtn', { type: 'button', title: 'New tab', 'aria-label': 'New tab', onClick: () => setMode('home') }, icon('Plus')),
     h('span.grow'),

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#1b2338"/><defs><mask id="c2-k" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><rect width="512" height="512" fill="#fff"/><g fill="#000"><g transform="translate(151.37 412.01) rotate(-36)"><path d="M-10.68 0L45.52 -23.59L347.48 -23.59L347.48 23.59L45.52 23.59Z"/></g></g></mask></defs>
+  <path d="M256 90L295.96 212.99L425.29 212.99L320.66 289.01L360.63 412.01L256 335.99L151.37 412.01L191.34 289.01L86.71 212.99L216.04 212.99ZM256 144.72L283.68 229.9L373.24 229.9L300.78 282.55L328.46 367.73L256 315.09L183.54 367.73L211.22 282.55L138.76 229.9L228.32 229.9Z" fill="#ffffff" fill-rule="evenodd" mask="url(#c2-k)"/><clipPath id="c2-c"><path d="M256 268L258 50L523 1L523 212.99Z"/></clipPath><path d="M256 90L295.96 212.99L425.29 212.99L320.66 289.01L360.63 412.01L256 335.99L151.37 412.01L191.34 289.01L86.71 212.99L216.04 212.99ZM256 144.72L283.68 229.9L373.24 229.9L300.78 282.55L328.46 367.73L256 315.09L183.54 367.73L211.22 282.55L138.76 229.9L228.32 229.9Z" fill="#e2a400" fill-rule="evenodd" mask="url(#c2-k)" clip-path="url(#c2-c)"/>
+  <g transform="translate(151.37 412.01) rotate(-36)">
+    <path d="M0 0L45.52 -14.685L45.52 14.685Z" fill="#f7deb0"/>
+    <path d="M0 0L16.39 -5.29L16.39 5.29Z" fill="#1b2338"/>
+    <path d="M307.74 -14.685L45.52 -14.685Q30.96 -9.79 45.52 -4.89Q30.96 0 45.52 4.9Q30.96 9.79 45.52 14.69L307.74 14.685Z" fill="#e2a400"/>
+    <rect x="45.52" y="-14.69" width="262.21" height="9.79" fill="#f6c64a" mask="url(#c2-b)"/>
+    <rect x="45.52" y="4.89" width="262.21" height="9.79" fill="#b98300" mask="url(#c2-b)"/>
+    <mask id="c2-b" maskUnits="userSpaceOnUse" x="-50" y="-100" width="438.58" height="200"><path d="M307.74 -14.685L45.52 -14.685Q30.96 -9.79 45.52 -4.89Q30.96 0 45.52 4.9Q30.96 9.79 45.52 14.69L307.74 14.685Z" fill="#fff"/></mask>
+    <rect x="307.74" y="-14.69" width="16.15" height="29.37" fill="#8c96ad"/>
+    <rect x="313.07" y="-14.69" width="1.94" height="29.37" fill="#1b2338" opacity=".35"/>
+    <rect x="317.75" y="-14.69" width="1.94" height="29.37" fill="#1b2338" opacity=".35"/>
+    <path d="M323.89 -14.685H333.29A5.29 5.29 0 0 1 338.58 -9.4V9.4A5.29 5.29 0 0 1 333.29 14.685H323.89Z" fill="#e8664f"/>
+  </g></svg>

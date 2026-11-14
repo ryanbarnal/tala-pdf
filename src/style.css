@@ -149,13 +149,9 @@ p {
   white-space: nowrap;
 }
 .brand-mark {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--star);
-  color: #1b2338;
+  display: block;
+  width: 28px;
+  height: 28px;
 }
 .tabs {
   display: flex;

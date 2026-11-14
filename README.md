@@ -1,3 +1,5 @@
+<p><img src="branding/tala-pdf-logo.png" alt="Tala PDF" width="360"></p>
+
 # Tala PDF
 
 A PDF reader and editor that runs on Windows, macOS, and in any phone or desktop browser.
@@ -134,6 +136,8 @@ separately (`npm i -D playwright` and `npx playwright install chromium`).
 | `src/convert.js` | Word, Excel, PowerPoint, text and HTML into PDF |
 | `src/exporters.js` | PDF into Word, Excel, PowerPoint, images and text |
 | `electron/` | Desktop shell |
+
+The logo files (vector and PNG, for light and dark backgrounds) are in `branding/`.
 
 To rename the app, change `APP_NAME` in `src/config.js`, `productName` in `package.json`,
 the manifest names in `vite.config.js`, and the `<title>` in `index.html`.
