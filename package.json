@@ -18,6 +18,7 @@
   "license": "GPL-3.0-only",
   "devDependencies": {
     "@cantoo/pdf-lib": "^2.11.1",
+    "@fontsource/fraunces": "^5.3.0",
     "@tesseract.js-data/eng": "^1.0.0",
     "docx": "^9.15.4",
     "electron": "^45.3.2",

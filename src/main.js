@@ -1,4 +1,5 @@
 import 'pdfjs-dist/web/pdf_viewer.css';
+import '@fontsource/fraunces/latin-600.css';
 import './style.css';
 import { zipSync } from 'fflate';
 import { h, icon, toast, fmtSize, fmtAgo, debounce, uid, canvasToBytes, readAsDataUrl, loadImage, baseName, clamp } from './util.js';
@@ -73,7 +74,7 @@ const printRoot = h('div#print-root');
 document.getElementById('app').append(
   h(
     'header.topbar',
-    h('div.brand', h('img.brand-mark', { src: './mark.svg', alt: '', width: 28, height: 28 }), h('span.brand-name', APP_NAME)),
+    h('div.brand', h('img.brand-mark', { src: './mark.svg', alt: '', width: 30, height: 30 }), h('span.brand-name', APP_NAME)),
     tabsEl,
     h('button.iconbtn', { type: 'button', title: 'New tab', 'aria-label': 'New tab', onClick: () => setMode('home') }, icon('Plus')),
     h('span.grow'),

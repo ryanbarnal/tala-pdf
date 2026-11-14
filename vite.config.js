@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       disable: mode === 'desktop',
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
+      includeAssets: ['icon.svg', 'favicon.svg', 'mark.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'Tala PDF',
         short_name: 'Tala PDF',
@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
         display: 'standalone',
         start_url: './',
         scope: './',
-        background_color: '#1b2338',
-        theme_color: '#1b2338',
+        background_color: '#0f1e3d',
+        theme_color: '#0f1e3d',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
