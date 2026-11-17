@@ -1,6 +1,6 @@
 {
   "name": "tala-pdf",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Read, mark up, sign and edit PDFs on your own device.",
   "main": "electron/main.cjs",
   "scripts": {
