@@ -1,5 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, protocol, net, Menu, shell, session } = require('electron');
 const os = require('node:os');
+const { setupUpdates } = require('./updater.cjs');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { pathToFileURL } = require('node:url');
@@ -199,6 +200,7 @@ if (!app.requestSingleInstanceLock()) {
           submenu: [
             { label: 'User manual', click: () => win?.webContents.send('menu', 'manual') },
             { label: 'Keyboard shortcuts', click: () => win?.webContents.send('menu', 'shortcuts') },
+            { label: 'Check for updates…', click: () => win?.webContents.send('menu', 'updates') },
             { type: 'separator' },
             { label: 'About Tala PDF', click: () => win?.webContents.send('menu', 'about') },
           ],
@@ -208,6 +210,7 @@ if (!app.requestSingleInstanceLock()) {
 
     for (const p of pdfArgs(process.argv.slice(1))) pending.push(path.resolve(p));
     createWindow();
+    setupUpdates(() => win);
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });

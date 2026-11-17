@@ -12,7 +12,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     VitePWA({
       disable: mode === 'desktop',
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['icon.svg', 'favicon.svg', 'mark.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'Tala PDF',

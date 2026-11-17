@@ -11,9 +11,10 @@
     "preview": "vite preview",
     "desktop": "npm run build:desktop && electron .",
     "dist": "npm run build:desktop && electron-builder --publish never",
-    "test": "node tests/make-fixture.mjs && node tests/make-locked.mjs && node tests/make-office.mjs && node tests/smoke.cjs && node tests/features.cjs",
-    "test:desktop": "node tests/make-fixture.mjs && node tests/desktop.cjs",
-    "manual": "node scripts/make-manual.cjs"
+    "test": "node tests/make-fixture.mjs && node tests/make-locked.mjs && node tests/make-office.mjs && node tests/smoke.cjs && node tests/features.cjs && node tests/web-update.cjs",
+    "test:desktop": "node tests/make-fixture.mjs && node tests/make-locked.mjs && node tests/make-office.mjs && node tests/desktop.cjs && node tests/updates.cjs",
+    "manual": "node scripts/make-manual.cjs",
+    "release": "npm run build:desktop && electron-builder --publish always"
   },
   "author": "Ryan Ocbina Barnal",
   "license": "GPL-3.0-only",
@@ -84,6 +85,13 @@
             "arm64",
             "x64"
           ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
         }
       ],
       "category": "public.app-category.productivity",
@@ -96,10 +104,21 @@
       ],
       "category": "Office"
     },
-    "copyright": "© 2026 Ryan Ocbina Barnal"
+    "copyright": "© 2026 Ryan Ocbina Barnal",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ryanbarnal",
+        "repo": "tala-pdf",
+        "releaseType": "release"
+      }
+    ]
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/ryanbarnal/tala-pdf.git"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   }
 }

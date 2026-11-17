@@ -277,6 +277,8 @@ tr { break-inside: avoid; }
 
 <section class="chapter" id="faq">
   <h2><span class="n">14</span>Questions and troubleshooting</h2>
+  <h3>How do I get updates?</h3>
+  <p>Tala PDF checks for new versions by itself. On Windows, a new version downloads in the background; when it is ready, a message offers <strong>Restart now</strong>, or it installs the next time you quit. On a Mac, the message offers <strong>Download</strong>, which opens the download page for the new version. In a browser or on a phone, the message offers <strong>Reload now</strong>. To check straight away, choose <strong>Help › Check for updates</strong>. Unsaved work is kept as a recovery copy before the app restarts.</p>
   <h3>Where are my files stored?</h3>
   <p>Only on your device. Tala PDF does not upload documents anywhere. Recent files and unsaved work are kept in the app's own storage on this device.</p>
   <h3>A PDF opens, but other apps say editing is not allowed. Can I save it?</h3>

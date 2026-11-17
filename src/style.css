@@ -1643,3 +1643,38 @@ kbd {
   background: var(--surface-2);
   font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
 }
+
+/* ---------- update banner ---------- */
+#update-bar {
+  position: fixed;
+  z-index: 90;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  max-width: min(520px, calc(100vw - 32px));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px 10px 14px;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.update-ic {
+  display: grid;
+  color: var(--accent);
+}
+.update-text {
+  flex: 1;
+  min-width: 160px;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.update-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}

@@ -13,6 +13,7 @@ import * as store from './store.js';
 import { ocrPage, hasText } from './ocr.js';
 import { convertToPdf, CONVERTIBLE, UNSUPPORTED_HINT } from './convert.js';
 import * as ex from './exporters.js';
+import { initUpdates, checkForUpdates } from './updates.js';
 import { APP_NAME, APP_CREDIT, APP_VERSION, MANUAL_URL } from './config.js';
 
 const TOOLS = [
@@ -1419,6 +1420,7 @@ function helpMenu(anchor) {
   popMenu(anchor, [
     { icon: 'BookOpen', label: 'User manual', onClick: openManual },
     { icon: 'Keyboard', label: 'Keyboard shortcuts', onClick: shortcutsDialog },
+    { icon: 'RefreshCw', label: 'Check for updates', onClick: checkForUpdates },
     '-',
     { icon: 'Info', label: 'About Tala PDF', onClick: aboutDialog },
   ]);
@@ -1484,10 +1486,11 @@ function aboutDialog() {
       h('p.muted', 'Tala is the Filipino word for star. Built with pdf.js, pdf-lib, Tesseract.js, mammoth, ExcelJS, docx and PptxGenJS. Licensed under the GNU GPL v3.'),
     ),
     [
+      { label: 'Check for updates', value: 'updates' },
       { label: 'User manual', value: 'manual' },
       { label: 'Close', value: true, primary: true },
     ],
-  ).then((v) => v === 'manual' && openManual());
+  ).then((v) => (v === 'manual' ? openManual() : v === 'updates' ? checkForUpdates() : null));
 }
 
 /* ================= theme ================= */
@@ -1608,7 +1611,9 @@ void DRAW_TOOLS;
 void clonePage;
 
 setMode('home');
-window.desktop?.onMenu?.((what) => ({ manual: openManual, shortcuts: shortcutsDialog, about: aboutDialog })[what]?.());
+window.desktop?.onMenu?.((what) => ({ manual: openManual, shortcuts: shortcutsDialog, about: aboutDialog, updates: checkForUpdates })[what]?.());
+// Before an update restarts or reloads the app, keep a recovery copy of anything unsaved.
+initUpdates(() => Promise.all(app.docs.filter((d) => d.dirty).map((d) => store.writeAutosave(d))));
 window.desktop?.ready?.();
 
 /* Let the opening animation finish (about 1.6 s), then fade it away. Skip the wait when motion is reduced. */

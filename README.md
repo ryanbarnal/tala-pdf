@@ -153,7 +153,10 @@ the manifest names in `vite.config.js`, and the `<title>` in `index.html`.
 **Web version**: every push to `main` publishes to GitHub Pages
 (one-time setup: repository **Settings → Pages → Source: GitHub Actions**).
 
-**Desktop installers**: push a version tag and the installers are attached to a GitHub release.
+**Desktop installers and automatic updates**: push a version tag. The workflow creates the GitHub
+release and uploads the installers together with the update files (`latest.yml`, `latest-mac.yml`)
+that installed copies check. The tag must match the version in `package.json`, which `npm version`
+takes care of.
 
 ```bash
 npm version patch
@@ -163,8 +166,19 @@ npm version patch
 git push --follow-tags
 ```
 
-You can also run the **Desktop installers** workflow by hand from the Actions tab and download the
-installers from the run's artifacts.
+Running the **Desktop installers** workflow by hand from the Actions tab only builds the installers as
+artifacts; it does not publish an update.
+
+How updates reach people:
+
+- **Windows**: the app checks shortly after it starts and every 4 hours, downloads the new version in the
+  background, then offers **Restart now** (or installs when the app next quits).
+- **macOS**: Apple only lets signed apps replace themselves, so until the Mac build is signed and
+  notarized the app shows **Download**, which opens the new release. After signing, change
+  `canInstall` in `electron/updater.cjs` to include `darwin`.
+- **Web and phones**: a new deployment to GitHub Pages is fetched in the background and the app offers
+  **Reload now**.
+- **Help › Check for updates** checks immediately in every version.
 
 ### Signing (optional)
 

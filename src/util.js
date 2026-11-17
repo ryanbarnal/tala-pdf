@@ -69,6 +69,7 @@ import {
   BookOpen,
   Keyboard,
   Info,
+  RefreshCw,
 } from 'lucide';
 
 const L = {
@@ -141,6 +142,7 @@ const L = {
   BookOpen,
   Keyboard,
   Info,
+  RefreshCw,
 };
 
 /** Tiny DOM builder: h('div.cls#id', {attrs/on*}, ...children) */

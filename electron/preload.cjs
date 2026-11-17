@@ -19,4 +19,10 @@ contextBridge.exposeInMainWorld('desktop', {
   onOpen: (cb) => ipcRenderer.on('open-file', (_e, entry) => cb(entry)),
   ready: () => ipcRenderer.send('ready'),
   onMenu: (cb) => ipcRenderer.on('menu', (_e, what) => cb(what)),
+  updates: {
+    onChange: (cb) => ipcRenderer.on('update', (_e, state) => cb(state)),
+    check: () => ipcRenderer.invoke('update-check'),
+    install: () => ipcRenderer.invoke('update-install'),
+    openDownloadPage: () => ipcRenderer.invoke('update-download-page'),
+  },
 });
