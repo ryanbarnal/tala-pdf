@@ -67,7 +67,7 @@ app.pdfjsLib = pdfjsLib;
 /** The logo in the title bar; drawn in the text colour so it follows the light or dark theme. */
 function brandMark() {
   const el = h('span.brand-mark');
-  el.innerHTML = `<svg viewBox="40 40 432 432" aria-hidden="true"><defs><mask id="tb" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><rect width="512" height="512" fill="#fff"/><path d="M244.48 277.86L156.92 398.37" stroke="#000" stroke-width="11.76" stroke-linecap="round"/><circle cx="244.48" cy="277.86" r="16.66" fill="#000"/></mask></defs><path d="M371.21 420.57L256 350.2L140.79 420.57L172.12 289.26L69.59 201.43L204.16 190.64L256 66L307.84 190.64L442.41 201.43L339.88 289.26Z" fill="currentColor" stroke="currentColor" stroke-width="11.76" stroke-linejoin="round" mask="url(#tb)"/></svg>`;
+  el.innerHTML = `<svg viewBox="40 40 432 432" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"><path d="M371.21 420.57L256 344.32L140.79 420.57L177.71 287.44L69.59 201.43L207.61 195.4L256 66L304.39 195.4L442.41 201.43L334.29 287.44Z" pathLength="1"/><path class="" d="M221.49 309.51L163.84 388.85" pathLength="1"/></g><circle cx="242.18" cy="281.03" r="25.3" fill="currentColor"/></svg>`;
   return el;
 }
 
@@ -1631,7 +1631,7 @@ window.desktop?.ready?.();
   if (splash) {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const shown = performance.now();
-    const wait = Math.max(0, (reduced ? 300 : 1350) - shown);
+    const wait = Math.max(0, (reduced ? 300 : 1650) - shown);
     setTimeout(() => {
       splash.classList.add('done');
       setTimeout(() => splash.remove(), 400);
