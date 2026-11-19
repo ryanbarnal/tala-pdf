@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="84 80 348 348">
-  <rect x="236" y="96" width="176" height="232" rx="14" fill="#ffffff" transform="rotate(8 324 212)"/>
-  <path d="M262 214H372M262 248H372M262 282H340" stroke="#c9d3e3" stroke-width="12" stroke-linecap="round" transform="rotate(8 324 212)"/>
-  <path d="M390.66 308.35L286.79 315.4L248 412L209.21 315.4L105.34 308.35L185.23 241.6L159.83 140.65L248 196L336.17 140.65L310.77 241.6Z" fill="#f0a92b" stroke="#f0a92b" stroke-width="10" stroke-linejoin="round"/>
-  <path d="M248 280L248 396" stroke="#0f1e3d" stroke-width="9" stroke-linecap="round"/>
-  <circle cx="248" cy="280" r="15" fill="#0f1e3d"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 40 432 432"><defs><mask id="b" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><rect width="512" height="512" fill="#fff"/><path d="M244.48 277.86L156.92 398.37" stroke="#000" stroke-width="11.76" stroke-linecap="round"/><circle cx="244.48" cy="277.86" r="16.66" fill="#000"/></mask></defs><path d="M371.21 420.57L256 350.2L140.79 420.57L172.12 289.26L69.59 201.43L204.16 190.64L256 66L307.84 190.64L442.41 201.43L339.88 289.26Z" fill="#ffffff" stroke="#ffffff" stroke-width="11.76" stroke-linejoin="round" mask="url(#b)"/></svg>

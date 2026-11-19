@@ -35,25 +35,21 @@ function html(c) {
   const pins = labels.map(([key], i) => `<span class="pin" style="left:${(ws[key].x * 100).toFixed(2)}%;top:${(ws[key].y * 100).toFixed(2)}%">${i + 1}</span>`).join('');
 
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Tala PDF User Manual</title><style>
-@font-face { font-family: Fraunces; font-weight: 600; src: url(${font('fraunces/files/fraunces-latin-600-normal.woff2')}) format('woff2'); }
-@font-face { font-family: 'Source Sans 3'; font-weight: 400; src: url(${font('source-sans-3/files/source-sans-3-latin-400-normal.woff2')}) format('woff2'); }
-@font-face { font-family: 'Source Sans 3'; font-weight: 600; src: url(${font('source-sans-3/files/source-sans-3-latin-600-normal.woff2')}) format('woff2'); }
-@font-face { font-family: 'Source Sans 3'; font-weight: 400; font-style: italic; src: url(${font('source-sans-3/files/source-sans-3-latin-400-italic.woff2')}) format('woff2'); }
 @page { size: A4; margin: 18mm 18mm 20mm; }
 @page :first { margin: 0; }
-:root { --ink: #0f1e3d; --teal: #0e7c74; --blue: #163a7a; --gold: #f0a92b; --muted: #55607a; --line: #d8dee8; --wash: #f1f6f6; }
+:root { --ink: #111111; --teal: #111111; --blue: #111111; --gold: #111111; --muted: #6e6e6b; --line: #e3e3e1; --wash: #f4f4f3; }
 * { box-sizing: border-box; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-body { margin: 0; font: 10.5pt/1.55 'Source Sans 3', sans-serif; color: var(--ink); }
-h1, h2, h3 { font-family: Fraunces, Georgia, serif; font-weight: 600; line-height: 1.2; break-after: avoid; }
+body { margin: 0; font: 10pt/1.6 Inter, sans-serif; color: var(--ink); }
+h1, h2, h3 { font-family: 'Inter Display', Inter, sans-serif; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; break-after: avoid; }
 h2 { font-size: 21pt; margin: 0 0 10pt; color: var(--blue); }
-h2 .n { color: var(--teal); margin-right: 8pt; }
+h2 .n { color: var(--muted); font-weight: 400; margin-right: 10pt; }
 h3 { font-size: 13pt; margin: 16pt 0 5pt; }
 p { margin: 0 0 7pt; }
 .chapter { break-before: page; }
 .lead { font-size: 12pt; color: var(--muted); margin-bottom: 12pt; }
 figure { margin: 10pt 0 12pt; break-inside: avoid; }
-figure img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 6pt; }
+figure img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 4pt; }
 figure.half { width: 62%; }
 figure.wide { width: 82%; }
 figure.small { width: 40%; }
@@ -63,29 +59,29 @@ figcaption { font-size: 9pt; color: var(--muted); margin-top: 4pt; font-style: i
 .steps li { margin-bottom: 3pt; }
 ul { padding-left: 15pt; margin: 3pt 0 9pt; } li { margin-bottom: 2pt; }
 .tip, .note { padding: 7pt 10pt; border-radius: 5pt; margin: 8pt 0 10pt; break-inside: avoid; }
-.tip { background: #fff5e2; border-left: 3pt solid var(--gold); }
-.note { background: var(--wash); border-left: 3pt solid var(--teal); }
-kbd { font: 8.5pt/1 ui-monospace, Menlo, Consolas, monospace; border: 1px solid #b9c3d3; border-bottom-width: 2px; border-radius: 3pt; padding: 1.5pt 4pt; background: #f6f8fb; }
+.tip { background: var(--wash); border-left: 2pt solid var(--ink); }
+.note { background: #ffffff; border: 1px solid var(--line); border-left: 2pt solid var(--ink); }
+kbd { font: 8pt/1 ui-monospace, Menlo, Consolas, monospace; border: 1px solid var(--line); border-radius: 3pt; padding: 1.5pt 4pt; background: var(--wash); }
 table { width: 100%; border-collapse: collapse; margin: 6pt 0 10pt; break-inside: auto; }
 td, th { text-align: left; padding: 5pt 6pt; border-top: 1px solid var(--line); vertical-align: top; }
 th { font-size: 8.5pt; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: 0; }
 tr { break-inside: avoid; }
 .tool { white-space: nowrap; font-weight: 600; }
 .annot { position: relative; }
-.pin { position: absolute; transform: translate(-50%, -50%); width: 17pt; height: 17pt; border-radius: 50%; background: var(--gold); color: var(--ink); font: 600 9pt/17pt 'Source Sans 3'; text-align: center; box-shadow: 0 0 0 2pt #fff; }
+.pin { position: absolute; transform: translate(-50%, -50%); width: 16pt; height: 16pt; border-radius: 50%; background: #111; color: #fff; font: 600 8.5pt/16pt Inter; text-align: center; box-shadow: 0 0 0 2pt #fff; }
 .legend { columns: 2; column-gap: 18pt; padding-left: 15pt; font-size: 9.5pt; }
-.cover { height: 297mm; padding: 28mm 22mm 22mm; display: flex; flex-direction: column; color: #fff; background: radial-gradient(120% 90% at 25% 15%, #0e7c74 0%, #163a7a 55%, #0f1e3d 100%); }
-.cover .cover-svg { width: 150px; height: auto; }
-.cover h1 { font-size: 40pt; margin: 26pt 0 4pt; }
-.cover h1 span { color: var(--gold); }
-.cover .sub { font-size: 15pt; color: #c8d6ec; margin: 0; }
+.cover { height: 297mm; padding: 28mm 22mm 22mm; display: flex; flex-direction: column; color: #fff; background: #111111; }
+.cover .cover-svg { width: 96px; height: auto; }
+.cover h1 { font-size: 38pt; margin: 30pt 0 4pt; letter-spacing: -0.02em; }
+.cover h1 span { color: #fff; font-weight: 400; }
+.cover .sub { font-size: 14pt; color: #a3a3a0; margin: 0; }
 .cover .grow { flex: 1; }
-.cover .meta { font-size: 10.5pt; color: #c8d6ec; line-height: 1.7; }
+.cover .meta { font-size: 10pt; color: #a3a3a0; line-height: 1.7; }
 .cover .meta strong { color: #fff; }
 .toc { list-style: none; padding: 0; margin: 10pt 0 0; columns: 2; column-gap: 24pt; }
 .toc li { padding: 5pt 0; border-bottom: 1px solid var(--line); break-inside: avoid; }
 .toc a { color: var(--ink); text-decoration: none; }
-.toc .n { display: inline-block; width: 20pt; color: var(--teal); font-weight: 600; }
+.toc .n { display: inline-block; width: 20pt; color: var(--muted); }
 .clear { clear: both; }
 .credit { margin-top: 18pt; padding-top: 10pt; border-top: 1px solid var(--line); color: var(--muted); }
 </style></head><body>

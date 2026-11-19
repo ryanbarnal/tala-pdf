@@ -1,5 +1,7 @@
 import 'pdfjs-dist/web/pdf_viewer.css';
-import '@fontsource/fraunces/latin-600.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
 import './style.css';
 import { zipSync } from 'fflate';
 import { h, icon, toast, fmtSize, fmtAgo, debounce, uid, canvasToBytes, readAsDataUrl, loadImage, baseName, clamp } from './util.js';
@@ -62,6 +64,13 @@ app.pdfjsLib = pdfjsLib;
 
 /* ================= layout ================= */
 
+/** The logo in the title bar; drawn in the text colour so it follows the light or dark theme. */
+function brandMark() {
+  const el = h('span.brand-mark');
+  el.innerHTML = `<svg viewBox="40 40 432 432" aria-hidden="true"><defs><mask id="tb" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><rect width="512" height="512" fill="#fff"/><path d="M244.48 277.86L156.92 398.37" stroke="#000" stroke-width="11.76" stroke-linecap="round"/><circle cx="244.48" cy="277.86" r="16.66" fill="#000"/></mask></defs><path d="M371.21 420.57L256 350.2L140.79 420.57L172.12 289.26L69.59 201.43L204.16 190.64L256 66L307.84 190.64L442.41 201.43L339.88 289.26Z" fill="currentColor" stroke="currentColor" stroke-width="11.76" stroke-linejoin="round" mask="url(#tb)"/></svg>`;
+  return el;
+}
+
 const tabsEl = h('div.tabs', { role: 'tablist', 'aria-label': 'Open documents' });
 const toolbar = h('div.toolbar', { role: 'toolbar', 'aria-label': 'Tools' });
 const propsbar = h('div.propsbar');
@@ -75,7 +84,7 @@ const printRoot = h('div#print-root');
 document.getElementById('app').append(
   h(
     'header.topbar',
-    h('div.brand', h('img.brand-mark', { src: './mark.svg', alt: '', width: 22, height: 22 }), h('span.brand-name', APP_NAME)),
+    h('div.brand', brandMark(), h('span.brand-name', APP_NAME)),
     tabsEl,
     h('button.iconbtn', { type: 'button', title: 'New tab', 'aria-label': 'New tab', onClick: () => setMode('home') }, icon('Plus')),
     h('span.grow'),
@@ -1622,7 +1631,7 @@ window.desktop?.ready?.();
   if (splash) {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const shown = performance.now();
-    const wait = Math.max(0, (reduced ? 300 : 1700) - shown);
+    const wait = Math.max(0, (reduced ? 300 : 1350) - shown);
     setTimeout(() => {
       splash.classList.add('done');
       setTimeout(() => splash.remove(), 400);
