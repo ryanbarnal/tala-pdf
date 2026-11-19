@@ -67,7 +67,7 @@ app.pdfjsLib = pdfjsLib;
 /** The logo in the title bar; drawn in the text colour so it follows the light or dark theme. */
 function brandMark() {
   const el = h('span.brand-mark');
-  el.innerHTML = `<svg viewBox="40 40 432 432" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"><path d="M371.21 420.57L256 344.32L140.79 420.57L177.71 287.44L69.59 201.43L207.61 195.4L256 66L304.39 195.4L442.41 201.43L334.29 287.44Z" pathLength="1"/><path class="" d="M221.49 309.51L163.84 388.85" pathLength="1"/></g><circle cx="242.18" cy="281.03" r="25.3" fill="currentColor"/></svg>`;
+  el.innerHTML = `<svg viewBox="40 40 432 432" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"><path d="M373.56 431.8L274.81 364.77Q256 352 237.19 364.77L138.44 431.8L171.68 317.17Q178.01 295.34 160.06 281.4L65.79 208.2L185.08 204.39Q207.8 203.66 215.51 182.27L256 70L296.49 182.27Q304.2 203.66 326.92 204.39L446.21 208.2L351.94 281.4Q333.99 295.34 340.32 317.17Z" pathLength="1"/><path d="M228.96 307.21L140.21 429.38" pathLength="1"/><circle cx="237.19" cy="295.89" r="14" pathLength="1"/></g></svg>`;
   return el;
 }
 
